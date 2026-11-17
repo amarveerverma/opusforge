@@ -8,6 +8,10 @@ class ClipUpdate(BaseModel):
     crop_config: Optional[Dict[str, Any]] = None
     caption_config: Optional[Dict[str, Any]] = None
 
+class FramingUpdateRequest(BaseModel):
+    mode: Optional[str] = Field(None, description="smart_track | center | blur_background | split_screen | manual")
+    manual_x_offset: Optional[float] = Field(None, description="Normalized 0.0 to 1.0 focal center")
+
 class ClipResponse(BaseModel):
     id: str
     project_id: str

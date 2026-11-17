@@ -1,11 +1,12 @@
 import json
 from pathlib import Path
 from fastapi import APIRouter, HTTPException
-from typing import List, Optional
-from ..schemas.clip import ClipResponse, ClipUpdate
+from typing import List, Optional, Dict, Any
+from ..schemas.clip import ClipResponse, ClipUpdate, FramingUpdateRequest
 from ..database import get_db
 from ..config import settings
 from ..core.clip_discovery import discover_clips_from_analysis, CandidateClip
+from ..core.reframer import CropConfig, calculate_clip_framing
 
 router = APIRouter(tags=["Clips"])
 
@@ -35,12 +36,17 @@ async def discover_project_clips(project_id: str):
     face_file = proj_dir / "analysis" / "face_tracks.json"
     face_data = json.loads(face_file.read_text(encoding="utf-8")) if face_file.exists() else None
     
+    source_w = proj["width"] if proj["width"] and proj["width"] > 0 else 1920
+    source_h = proj["height"] if proj["height"] and proj["height"] > 0 else 1080
+    
     candidates = discover_clips_from_analysis(
         project_id=project_id,
         transcript_data=transcript_data,
         scene_data=scene_data,
         face_data=face_data,
         instructions=proj["instructions"],
+        source_width=source_w,
+        source_height=source_h,
     )
     
     # Save candidate clips to candidates.json
@@ -199,3 +205,85 @@ async def update_clip(clip_id: str, payload: ClipUpdate):
         await db.commit()
         
     return await get_clip(clip_id)
+
+@router.get("/clips/{clip_id}/framing", response_model=Dict[str, Any])
+async def get_clip_framing(clip_id: str):
+    """Retrieves 9:16 vertical crop and framing configuration for a clip."""
+    async with get_db() as db:
+        cursor = await db.execute("SELECT * FROM clips WHERE id = ?", (clip_id,))
+        clip = await cursor.fetchone()
+        
+    if not clip:
+        raise HTTPException(status_code=404, detail="Clip not found")
+        
+    crop_cfg = json.loads(clip["crop_config_json"]) if clip["crop_config_json"] else {}
+    if crop_cfg:
+        return crop_cfg
+        
+    # If not yet calculated, calculate on the fly
+    async with get_db() as db:
+        cursor = await db.execute("SELECT * FROM projects WHERE id = ?", (clip["project_id"],))
+        proj = await cursor.fetchone()
+        
+    source_w = proj["width"] if proj and proj["width"] > 0 else 1920
+    source_h = proj["height"] if proj and proj["height"] > 0 else 1080
+    
+    proj_dir = settings.PROJECTS_DIR / clip["project_id"]
+    face_file = proj_dir / "analysis" / "face_tracks.json"
+    face_data = json.loads(face_file.read_text(encoding="utf-8")) if face_file.exists() else None
+    
+    cfg = calculate_clip_framing(
+        source_width=source_w,
+        source_height=source_h,
+        clip_start=clip["start_time"],
+        clip_end=clip["end_time"],
+        face_data=face_data,
+        mode="smart_track",
+    )
+    return cfg.model_dump()
+
+@router.patch("/clips/{clip_id}/framing", response_model=Dict[str, Any])
+async def update_clip_framing(clip_id: str, payload: FramingUpdateRequest):
+    """
+    Updates framing mode (smart_track, center, blur_background, split_screen, manual)
+    or adjusts horizontal focal center offset for a clip.
+    """
+    async with get_db() as db:
+        cursor = await db.execute("SELECT * FROM clips WHERE id = ?", (clip_id,))
+        clip = await cursor.fetchone()
+        if not clip:
+            raise HTTPException(status_code=404, detail="Clip not found")
+            
+        cursor = await db.execute("SELECT * FROM projects WHERE id = ?", (clip["project_id"],))
+        proj = await cursor.fetchone()
+        
+    source_w = proj["width"] if proj and proj["width"] > 0 else 1920
+    source_h = proj["height"] if proj and proj["height"] > 0 else 1080
+    
+    proj_dir = settings.PROJECTS_DIR / clip["project_id"]
+    face_file = proj_dir / "analysis" / "face_tracks.json"
+    face_data = json.loads(face_file.read_text(encoding="utf-8")) if face_file.exists() else None
+    
+    current_crop = json.loads(clip["crop_config_json"]) if clip["crop_config_json"] else {}
+    mode = payload.mode if payload.mode is not None else current_crop.get("mode", "smart_track")
+    manual_offset = payload.manual_x_offset if payload.manual_x_offset is not None else current_crop.get("manual_x_offset")
+    
+    new_cfg = calculate_clip_framing(
+        source_width=source_w,
+        source_height=source_h,
+        clip_start=clip["start_time"],
+        clip_end=clip["end_time"],
+        face_data=face_data,
+        mode=mode,
+        manual_x_offset=manual_offset,
+    )
+    
+    new_crop_json = json.dumps(new_cfg.model_dump())
+    async with get_db() as db:
+        await db.execute(
+            "UPDATE clips SET crop_config_json = ?, status = 'edited' WHERE id = ?",
+            (new_crop_json, clip_id)
+        )
+        await db.commit()
+        
+    return new_cfg.model_dump()

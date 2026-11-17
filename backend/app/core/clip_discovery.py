@@ -258,10 +258,13 @@ def discover_clips_from_analysis(
     scene_data: Optional[Dict[str, Any]] = None,
     face_data: Optional[Dict[str, Any]] = None,
     instructions: Optional[str] = None,
+    source_width: int = 1920,
+    source_height: int = 1080,
 ) -> List[CandidateClip]:
     """
     Discovers ranked, non-overlapping candidate clips snapped to sentence boundaries.
     """
+    from .reframer import calculate_clip_framing
     user_settings = parse_user_instructions(instructions)
     min_dur = user_settings["min_duration"]
     max_dur = user_settings["max_duration"]
@@ -315,6 +318,15 @@ def discover_clips_from_analysis(
             
             hook_first = " ".join([w.get("word", "") for w in accumulated_words[:8]]).strip()
             
+            crop_cfg = calculate_clip_framing(
+                source_width=source_width,
+                source_height=source_height,
+                clip_start=seg_start,
+                clip_end=seg_end,
+                face_data=face_data,
+                mode="smart_track",
+            )
+            
             candidates.append({
                 "start_time": round(seg_start, 2),
                 "end_time": round(seg_end, 2),
@@ -327,7 +339,7 @@ def discover_clips_from_analysis(
                 "score_breakdown": breakdown,
                 "transcript_excerpt": full_chunk_text,
                 "why_chosen": why,
-                "crop_config": {"mode": "auto_face", "manual_x_offset": None, "face_x": avg_face_x},
+                "crop_config": crop_cfg.model_dump(),
                 "caption_config": {"preset": "mrbeast", "font_size": 52, "highlight_color": "#00FF66"},
             })
             
