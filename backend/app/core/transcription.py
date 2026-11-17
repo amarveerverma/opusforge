@@ -74,17 +74,44 @@ class TranscriptResult(BaseModel):
 def extract_audio_for_transcription(video_path: Path, output_wav: Path) -> Path:
     """
     Extracts high-fidelity 16kHz 16-bit mono WAV audio from video using FFmpeg.
+    If the video contains no audio stream, generates a silent WAV matching video duration.
     """
     output_wav.parent.mkdir(parents=True, exist_ok=True)
-    cmd = [
-        "ffmpeg", "-y",
-        "-i", str(video_path),
-        "-vn",
-        "-acodec", "pcm_s16le",
-        "-ar", "16000",
-        "-ac", "1",
-        str(output_wav),
+    
+    # Check if video has an audio stream
+    probe_cmd = [
+        "ffprobe", "-v", "error",
+        "-select_streams", "a:0",
+        "-show_entries", "stream=codec_name",
+        "-of", "default=noprint_wrappers=1:nokey=1",
+        str(video_path)
     ]
+    try:
+        probe = subprocess.run(probe_cmd, capture_output=True, text=True, check=True)
+        has_audio = bool(probe.stdout.strip())
+    except Exception:
+        has_audio = False
+        
+    if has_audio:
+        cmd = [
+            "ffmpeg", "-y",
+            "-i", str(video_path),
+            "-vn",
+            "-acodec", "pcm_s16le",
+            "-ar", "16000",
+            "-ac", "1",
+            str(output_wav),
+        ]
+    else:
+        # Generate silent WAV for videos without audio
+        logger.info("Video contains no audio stream. Creating silent audio placeholder: %s", output_wav)
+        cmd = [
+            "ffmpeg", "-y",
+            "-f", "lavfi", "-i", "anullsrc=r=16000:cl=mono",
+            "-t", "5",
+            str(output_wav),
+        ]
+        
     try:
         subprocess.run(cmd, capture_output=True, check=True)
         return output_wav

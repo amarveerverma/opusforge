@@ -16,6 +16,7 @@ from .routers import (
     clips_router,
     renders_router,
     transcripts_router,
+    analysis_router,
 )
 
 # Configure structured logging
@@ -66,6 +67,7 @@ app.include_router(jobs_router)
 app.include_router(clips_router)
 app.include_router(renders_router)
 app.include_router(transcripts_router)
+app.include_router(analysis_router)
 
 @app.get("/")
 async def root():

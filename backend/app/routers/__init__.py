@@ -4,6 +4,7 @@ from .jobs import router as jobs_router
 from .clips import router as clips_router
 from .renders import router as renders_router
 from .transcripts import router as transcripts_router
+from .analysis import router as analysis_router
 
 __all__ = [
     "system_router",
@@ -12,4 +13,5 @@ __all__ = [
     "clips_router",
     "renders_router",
     "transcripts_router",
+    "analysis_router",
 ]
