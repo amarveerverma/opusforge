@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
+import Link from "next/link";
 import {
   Film,
   Sparkles,
@@ -404,7 +405,10 @@ export default function Dashboard() {
                     </div>
 
                     {/* Card Content */}
-                    <div className="p-5 flex-1 flex flex-col justify-between">
+                    <Link
+                      href={`/projects/${proj.id}`}
+                      className="p-5 flex-1 flex flex-col justify-between cursor-pointer group-hover:bg-white/[0.02] transition-colors"
+                    >
                       <div>
                         <h3 className="font-semibold text-sm text-zinc-100 group-hover:text-violet-400 transition-colors line-clamp-1 mb-1">
                           {proj.title}
@@ -423,9 +427,10 @@ export default function Dashboard() {
                         </div>
                         <div className="flex items-center gap-1 text-violet-400 font-medium">
                           <span>{proj.clips_count || 0} clips</span>
+                          <ArrowRight className="w-3.5 h-3.5 ml-0.5" />
                         </div>
                       </div>
-                    </div>
+                    </Link>
                   </div>
                 );
               })}
