@@ -2,7 +2,7 @@
  * ClipForge API Client
  */
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+export const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
 
 export interface GpuStatus {
   name: string;
@@ -87,4 +87,56 @@ export async function deleteProject(id: string): Promise<void> {
     method: "DELETE",
   });
   if (!res.ok) throw new Error("Failed to delete project");
+}
+
+export function uploadVideoWithProgress(
+  projectId: string,
+  file: File,
+  onProgress?: (percent: number) => void
+): Promise<Project> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    const formData = new FormData();
+    formData.append("file", file);
+
+    xhr.open("POST", `${API_BASE}/projects/${projectId}/upload`, true);
+
+    if (xhr.upload && onProgress) {
+      xhr.upload.onprogress = (event) => {
+        if (event.lengthComputable) {
+          const percent = Math.round((event.loaded / event.total) * 100);
+          onProgress(percent);
+        }
+      };
+    }
+
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        try {
+          const data = JSON.parse(xhr.responseText);
+          resolve(data);
+        } catch (e) {
+          reject(new Error("Invalid response format from server"));
+        }
+      } else {
+        try {
+          const err = JSON.parse(xhr.responseText);
+          reject(new Error(err.detail || "Video upload failed"));
+        } catch {
+          reject(new Error(`Upload failed with HTTP ${xhr.status}`));
+        }
+      }
+    };
+
+    xhr.onerror = () => reject(new Error("Network connection error during upload"));
+    xhr.send(formData);
+  });
+}
+
+export function getThumbnailUrl(projectId: string): string {
+  return `${API_BASE}/projects/${projectId}/thumbnail`;
+}
+
+export function getVideoStreamUrl(projectId: string): string {
+  return `${API_BASE}/projects/${projectId}/stream`;
 }
