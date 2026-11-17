@@ -1,10 +1,92 @@
 import json
+from pathlib import Path
 from fastapi import APIRouter, HTTPException
 from typing import List, Optional
 from ..schemas.clip import ClipResponse, ClipUpdate
 from ..database import get_db
+from ..config import settings
+from ..core.clip_discovery import discover_clips_from_analysis, CandidateClip
 
 router = APIRouter(tags=["Clips"])
+
+@router.post("/projects/{project_id}/discover", response_model=List[ClipResponse])
+async def discover_project_clips(project_id: str):
+    """
+    Executes AI clip discovery by fusing transcripts, scene cuts, face presence,
+    and user instructions into ranked, non-overlapping candidate moments.
+    """
+    async with get_db() as db:
+        cursor = await db.execute("SELECT * FROM projects WHERE id = ?", (project_id,))
+        proj = await cursor.fetchone()
+        
+    if not proj:
+        raise HTTPException(status_code=404, detail="Project not found")
+        
+    proj_dir = settings.PROJECTS_DIR / project_id
+    transcript_file = proj_dir / "transcripts" / "transcript.json"
+    if not transcript_file.exists():
+        raise HTTPException(status_code=400, detail="Project has not been transcribed yet. Run transcription first.")
+        
+    transcript_data = json.loads(transcript_file.read_text(encoding="utf-8"))
+    
+    scene_file = proj_dir / "analysis" / "scenes.json"
+    scene_data = json.loads(scene_file.read_text(encoding="utf-8")) if scene_file.exists() else None
+    
+    face_file = proj_dir / "analysis" / "face_tracks.json"
+    face_data = json.loads(face_file.read_text(encoding="utf-8")) if face_file.exists() else None
+    
+    candidates = discover_clips_from_analysis(
+        project_id=project_id,
+        transcript_data=transcript_data,
+        scene_data=scene_data,
+        face_data=face_data,
+        instructions=proj["instructions"],
+    )
+    
+    # Save candidate clips to candidates.json
+    cand_dir = proj_dir / "candidates"
+    cand_dir.mkdir(parents=True, exist_ok=True)
+    (cand_dir / "candidates.json").write_text(
+        json.dumps([c.model_dump() for c in candidates], indent=2),
+        encoding="utf-8"
+    )
+    
+    # Insert or replace in SQLite clips table
+    async with get_db() as db:
+        await db.execute("DELETE FROM clips WHERE project_id = ? AND status = 'suggested'", (project_id,))
+        
+        for c in candidates:
+            await db.execute(
+                """
+                INSERT INTO clips (
+                    id, project_id, rank, start_time, end_time, duration,
+                    title, hook, summary, virality_score, letter_grade,
+                    score_breakdown_json, transcript_excerpt, crop_config_json,
+                    caption_config_json, status
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'suggested')
+                """,
+                (
+                    c.clip_id,
+                    project_id,
+                    c.rank,
+                    c.start_time,
+                    c.end_time,
+                    c.duration,
+                    c.title,
+                    c.hook,
+                    c.summary,
+                    c.virality_score,
+                    c.letter_grade,
+                    json.dumps(c.score_breakdown.model_dump()),
+                    c.transcript_excerpt,
+                    json.dumps(c.crop_config),
+                    json.dumps(c.caption_config),
+                )
+            )
+        await db.execute("UPDATE projects SET status = 'discovered' WHERE id = ?", (project_id,))
+        await db.commit()
+        
+    return await list_project_clips(project_id)
 
 @router.get("/projects/{project_id}/clips", response_model=List[ClipResponse])
 async def list_project_clips(project_id: str):
