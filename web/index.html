@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Opus Clip AI - Multimodal Video Pipeline</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body { background-color: #0b0f17; color: #e2e8f0; font-family: system-ui, -apple-system, sans-serif; }
+    .glass-card { background: rgba(18, 24, 38, 0.85); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.08); }
+    .clip-active { border-color: #8b5cf6; background: rgba(139, 92, 246, 0.12); }
+    .grade-a { background: linear-gradient(135deg, #059669, #10b981); color: white; }
+    .grade-b { background: linear-gradient(135deg, #d97706, #f59e0b); color: white; }
+    .grade-c { background: linear-gradient(135deg, #dc2626, #ef4444); color: white; }
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+  <!-- Navbar -->
+  <header class="glass-card sticky top-0 z-50 px-6 py-4 flex items-center justify-between border-b border-slate-800">
+    <div class="flex items-center space-x-3">
+      <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-purple-600 to-indigo-500 flex items-center justify-center shadow-lg shadow-purple-500/25">
+        <i class="fa-solid fa-scissors text-white text-lg"></i>
+      </div>
+      <div>
+        <h1 class="font-extrabold text-lg tracking-tight bg-gradient-to-r from-purple-400 via-pink-300 to-indigo-300 bg-clip-text text-transparent">
+          OPUS CLIP AI
+        </h1>
+        <p class="text-xs text-slate-400">Multimodal Short Video Pipeline</p>
+      </div>
+    </div>
+
+    <!-- Quick stats -->
+    <div class="flex items-center space-x-4 text-xs text-slate-300">
+      <div id="videoMeta" class="hidden md:flex items-center space-x-2 bg-slate-900/60 px-3 py-1.5 rounded-lg border border-slate-800">
+        <i class="fa-solid fa-film text-purple-400"></i>
+        <span id="videoTitleDisplay" class="font-medium text-slate-200 truncate max-w-xs">Loading...</span>
+        <span id="videoDurationDisplay" class="text-slate-400">0s</span>
+      </div>
+      <button onclick="openNewModal()" class="px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-medium text-xs flex items-center space-x-1.5 transition shadow-md shadow-purple-600/20">
+        <i class="fa-solid fa-plus"></i>
+        <span>New Video</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Content Layout -->
+  <main class="flex-1 flex flex-col lg:flex-row overflow-hidden max-w-7xl mx-auto w-full p-4 lg:p-6 gap-6">
+
+    <!-- Left Column: Clips List -->
+    <section class="lg:w-2/5 flex flex-col space-y-3">
+      <div class="flex items-center justify-between px-1">
+        <div class="flex items-center space-x-2">
+          <i class="fa-solid fa-fire text-amber-400"></i>
+          <h2 class="font-bold text-sm uppercase tracking-wider text-slate-300">Detected Viral Clips</h2>
+        </div>
+        <span id="clipCountBadge" class="text-xs px-2 py-0.5 rounded-full bg-slate-800 text-purple-300 font-mono">0 clips</span>
+      </div>
+
+      <!-- Scrollable list of clips -->
+      <div id="clipsListContainer" class="flex-1 overflow-y-auto space-y-3 pr-1 max-h-[750px]">
+        <div class="text-center py-12 text-slate-500 text-sm">
+          <i class="fa-solid fa-spinner fa-spin text-2xl mb-2 text-purple-500"></i>
+          <p>Loading analysis and clips...</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Right Column: Active Clip Preview & Breakdown -->
+    <section class="lg:w-3/5 flex flex-col space-y-4">
+
+      <!-- Active Clip Card -->
+      <div id="activeClipCard" class="glass-card rounded-2xl p-6 flex flex-col space-y-6">
+
+        <!-- Top Header for Clip -->
+        <div class="flex items-start justify-between">
+          <div>
+            <div class="flex items-center space-x-2">
+              <span id="activeClipRank" class="text-xs font-bold px-2 py-0.5 rounded bg-purple-900/60 text-purple-300 border border-purple-500/30">#1</span>
+              <span id="activeClipTime" class="text-xs text-slate-400 font-mono">0.0s - 0.0s (0s)</span>
+            </div>
+            <h3 id="activeClipTitle" class="text-xl font-bold text-white mt-1">Select a clip</h3>
+          </div>
+
+          <!-- Opus Virality Dial / Badge -->
+          <div class="flex flex-col items-end">
+            <div class="flex items-center space-x-2">
+              <div id="activeClipScoreBadge" class="px-3 py-1 rounded-xl grade-a font-black text-xl flex items-center space-x-1 shadow-lg">
+                <span id="activeClipScore">94</span>
+                <span class="text-xs opacity-75">/99</span>
+              </div>
+              <div id="activeClipGradeBadge" class="w-8 h-8 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center font-black text-emerald-400 text-lg">
+                A
+              </div>
+            </div>
+            <span class="text-[10px] text-slate-400 uppercase tracking-widest mt-1 font-semibold">Virality Score</span>
+          </div>
+        </div>
+
+        <!-- Video Player Preview (9:16 layout) -->
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
+          <!-- 9:16 Aspect Ratio Frame Container -->
+          <div class="md:col-span-5 flex justify-center">
+            <div class="relative w-56 aspect-[9/16] bg-black rounded-2xl overflow-hidden shadow-2xl border border-slate-700/60 flex items-center justify-center">
+              <video id="clipVideoPlayer" class="w-full h-full object-cover" controls playsinline preload="metadata">
+                <source id="videoSource" src="" type="video/mp4">
+                Your browser does not support video playback.
+              </video>
+              <div id="noVideoOverlay" class="absolute inset-0 flex flex-col items-center justify-center bg-slate-950/80 p-4 text-center">
+                <i class="fa-solid fa-clapperboard text-3xl text-purple-400 mb-2"></i>
+                <p class="text-xs text-slate-300 font-medium">Click a clip with an export file to preview vertical 9:16 playback</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Breakdown Details & 4 Factors -->
+          <div class="md:col-span-7 flex flex-col space-y-3">
+            <div class="bg-slate-900/80 rounded-xl p-3 border border-slate-800">
+              <span class="text-[10px] font-bold uppercase tracking-wider text-purple-400 flex items-center space-x-1">
+                <i class="fa-solid fa-sparkles"></i>
+                <span>One-Line Reason</span>
+              </span>
+              <p id="activeOneLineReason" class="text-xs text-slate-200 mt-1 leading-relaxed">...</p>
+            </div>
+
+            <!-- 4 Factor Cards -->
+            <div class="grid grid-cols-2 gap-2.5">
+              <!-- Hook -->
+              <div class="bg-slate-900/60 rounded-xl p-3 border border-slate-800/80 flex flex-col justify-between">
+                <div class="flex items-center justify-between">
+                  <span class="text-xs font-bold text-slate-300">🪝 HOOK</span>
+                  <span id="hookGradePill" class="text-[10px] font-black px-1.5 py-0.5 rounded bg-emerald-900/60 text-emerald-300">A (92)</span>
+                </div>
+                <p id="hookJustification" class="text-[11px] text-slate-400 mt-1.5 line-clamp-2">First 3 seconds grab curiosity.</p>
+              </div>
+
+              <!-- Flow -->
+              <div class="bg-slate-900/60 rounded-xl p-3 border border-slate-800/80 flex flex-col justify-between">
+                <div class="flex items-center justify-between">
+                  <span class="text-xs font-bold text-slate-300">🌊 FLOW</span>
+                  <span id="flowGradePill" class="text-[10px] font-black px-1.5 py-0.5 rounded bg-emerald-900/60 text-emerald-300">A (89)</span>
+                </div>
+                <p id="flowJustification" class="text-[11px] text-slate-400 mt-1.5 line-clamp-2">Logical progression and punchline.</p>
+              </div>
+
+              <!-- Value -->
+              <div class="bg-slate-900/60 rounded-xl p-3 border border-slate-800/80 flex flex-col justify-between">
+                <div class="flex items-center justify-between">
+                  <span class="text-xs font-bold text-slate-300">💎 VALUE</span>
+                  <span id="valGradePill" class="text-[10px] font-black px-1.5 py-0.5 rounded bg-emerald-900/60 text-emerald-300">A (95)</span>
+                </div>
+                <p id="valJustification" class="text-[11px] text-slate-400 mt-1.5 line-clamp-2">High utility and emotional resonance.</p>
+              </div>
+
+              <!-- Trend -->
+              <div class="bg-slate-900/60 rounded-xl p-3 border border-slate-800/80 flex flex-col justify-between">
+                <div class="flex items-center justify-between">
+                  <span class="text-xs font-bold text-slate-300">📈 TREND</span>
+                  <span id="trendGradePill" class="text-[10px] font-black px-1.5 py-0.5 rounded bg-emerald-900/60 text-emerald-300">A (96)</span>
+                </div>
+                <p id="trendJustification" class="text-[11px] text-slate-400 mt-1.5 line-clamp-2">Current viral short-form pacing.</p>
+              </div>
+            </div>
+
+            <!-- Export / Action Button -->
+            <div class="pt-2 flex items-center space-x-3">
+              <a id="downloadClipBtn" href="#" download class="flex-1 py-2.5 px-4 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-semibold text-xs text-center transition flex items-center justify-center space-x-2 shadow-lg shadow-purple-600/20">
+                <i class="fa-solid fa-download"></i>
+                <span>Download 9:16 Video</span>
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Transcript Snippet Section -->
+        <div class="border-t border-slate-800/80 pt-4">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center space-x-1.5">
+              <i class="fa-solid fa-closed-captioning text-purple-400"></i>
+              <span>Word-Synced Transcript Snippet</span>
+            </span>
+          </div>
+          <p id="activeTranscriptSnippet" class="text-xs text-slate-300 bg-slate-950/60 p-3.5 rounded-xl border border-slate-800/80 leading-relaxed font-normal">
+            Select a clip to view its transcript...
+          </p>
+        </div>
+
+      </div>
+    </section>
+  </main>
+
+  <!-- Process New Video Modal -->
+  <div id="newVideoModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="glass-card max-w-lg w-full rounded-2xl p-6 shadow-2xl border border-slate-700">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-base font-bold text-white flex items-center space-x-2">
+          <i class="fa-solid fa-wand-magic-sparkles text-purple-400"></i>
+          <span>Process Video Pipeline</span>
+        </h3>
+        <button onclick="closeNewModal()" class="text-slate-400 hover:text-white">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <p class="text-xs text-slate-400 mb-4">
+        Provide either a YouTube URL or an absolute local file path (mp4/mov/mkv). The pipeline will transcribe, analyze visuals with Gemini, extract audio energy, fuse signals, score with Opus Virality criteria, and export 9:16 clips!
+      </p>
+
+      <div id="modalErrorBox" class="hidden p-3.5 bg-red-950/80 border border-red-500/50 rounded-xl text-xs text-red-200 whitespace-pre-line leading-relaxed mb-4">
+      </div>
+
+      <form id="processForm" onsubmit="handleProcess(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-medium text-slate-300 mb-1">YouTube URL or Local Path</label>
+          <input id="inputSource" type="text" required placeholder="https://www.youtube.com/watch?v=... or C:\videos\sample.mp4" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-purple-500">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">Top Clips to Export</label>
+            <input id="inputTopN" type="number" min="1" max="10" value="3" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-purple-500">
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">Duration Range (s)</label>
+            <div class="flex items-center space-x-2">
+              <input id="inputMinDur" type="number" value="15" class="w-1/2 bg-slate-900 border border-slate-700 rounded-xl px-2 py-2 text-xs text-white text-center">
+              <span class="text-slate-500 text-xs">-</span>
+              <input id="inputMaxDur" type="number" value="90" class="w-1/2 bg-slate-900 border border-slate-700 rounded-xl px-2 py-2 text-xs text-white text-center">
+            </div>
+          </div>
+        </div>
+
+        <div class="pt-2 flex justify-end space-x-3">
+          <button type="button" onclick="closeNewModal()" class="px-4 py-2 rounded-xl text-xs font-medium text-slate-400 hover:text-white bg-slate-800">Cancel</button>
+          <button id="submitProcessBtn" type="submit" class="px-5 py-2 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 shadow-lg shadow-purple-600/30 flex items-center space-x-2">
+            <span>Start Clipping</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    let reportData = null;
+    let currentClipIndex = 0;
+
+    async function loadReport() {
+      try {
+        const res = await fetch("/api/report");
+        if (!res.ok) throw new Error("No report loaded yet");
+        reportData = await res.json();
+        renderDashboard();
+      } catch (err) {
+        document.getElementById("clipsListContainer").innerHTML = `
+          <div class="text-center py-12 glass-card rounded-2xl p-6 text-slate-400">
+            <i class="fa-solid fa-video text-3xl mb-3 text-purple-400"></i>
+            <p class="text-sm font-semibold text-white">No Analysis Report Available</p>
+            <p class="text-xs mt-1 text-slate-400">Click <b>New Video</b> above to process a YouTube link or local video file.</p>
+          </div>
+        `;
+      }
+    }
+
+    function renderDashboard() {
+      if (!reportData || !reportData.clips) return;
+
+      const meta = reportData.source_metadata || {};
+      document.getElementById("videoTitleDisplay").textContent = meta.title || "Video";
+      document.getElementById("videoDurationDisplay").textContent = (meta.duration || 0) + "s";
+      document.getElementById("clipCountBadge").textContent = reportData.clips.length + " clips";
+
+      const container = document.getElementById("clipsListContainer");
+      container.innerHTML = "";
+
+      reportData.clips.forEach((clip, idx) => {
+        const gradeClass = clip.overall_grade === "A" ? "grade-a" : clip.overall_grade === "B" ? "grade-b" : "grade-c";
+        const isExported = Boolean(clip.exported_file);
+
+        const card = document.createElement("div");
+        card.className = `glass-card rounded-xl p-4 cursor-pointer transition hover:border-purple-500/50 flex items-center justify-between ${idx === currentClipIndex ? "clip-active" : ""}`;
+        card.onclick = () => selectClip(idx);
+
+        card.innerHTML = `
+          <div class="flex items-center space-x-3 truncate">
+            <div class="w-10 h-10 rounded-xl ${gradeClass} flex-shrink-0 flex items-center justify-center font-black text-sm shadow">
+              ${clip.virality_score}
+            </div>
+            <div class="truncate">
+              <div class="flex items-center space-x-2">
+                <span class="text-xs font-bold text-white truncate max-w-[200px]">${clip.title}</span>
+                ${isExported ? '<span class="text-[9px] px-1.5 py-0.2 rounded bg-emerald-950 text-emerald-400 border border-emerald-800">9:16</span>' : ''}
+              </div>
+              <div class="text-[11px] text-slate-400 font-mono mt-0.5">
+                ${clip.start_time.toFixed(1)}s - ${clip.end_time.toFixed(1)}s (${clip.duration.toFixed(1)}s)
+              </div>
+            </div>
+          </div>
+          <div class="text-right flex-shrink-0">
+            <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-800 text-slate-300">Grade ${clip.overall_grade}</span>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+
+      if (reportData.clips.length > 0) {
+        selectClip(currentClipIndex);
+      }
+    }
+
+    function selectClip(index) {
+      currentClipIndex = index;
+      const clip = reportData.clips[index];
+      if (!clip) return;
+
+      // Update active highlight in left list
+      const cards = document.getElementById("clipsListContainer").children;
+      for (let i = 0; i < cards.length; i++) {
+        if (i === index) {
+          cards[i].classList.add("clip-active");
+        } else {
+          cards[i].classList.remove("clip-active");
+        }
+      }
+
+      // Populate details
+      document.getElementById("activeClipRank").textContent = `#${clip.id}`;
+      document.getElementById("activeClipTime").textContent = `${clip.start_time.toFixed(1)}s - ${clip.end_time.toFixed(1)}s (${clip.duration.toFixed(1)}s)`;
+      document.getElementById("activeClipTitle").textContent = clip.title;
+      document.getElementById("activeClipScore").textContent = clip.virality_score;
+      document.getElementById("activeClipGradeBadge").textContent = clip.overall_grade;
+
+      const scoreBadge = document.getElementById("activeClipScoreBadge");
+      scoreBadge.className = `px-3 py-1 rounded-xl font-black text-xl flex items-center space-x-1 shadow-lg ${clip.overall_grade === "A" ? "grade-a" : clip.overall_grade === "B" ? "grade-b" : "grade-c"}`;
+
+      document.getElementById("activeOneLineReason").textContent = clip.one_line_reasoning;
+
+      // 4 Factors
+      document.getElementById("hookGradePill").textContent = `${clip.hook.grade} (${clip.hook.score})`;
+      document.getElementById("hookJustification").textContent = clip.hook.justification;
+
+      document.getElementById("flowGradePill").textContent = `${clip.flow.grade} (${clip.flow.score})`;
+      document.getElementById("flowJustification").textContent = clip.flow.justification;
+
+      document.getElementById("valGradePill").textContent = `${clip.value.grade} (${clip.value.score})`;
+      document.getElementById("valJustification").textContent = clip.value.justification;
+
+      document.getElementById("trendGradePill").textContent = `${clip.trend.grade} (${clip.trend.score})`;
+      document.getElementById("trendJustification").textContent = clip.trend.justification;
+
+      document.getElementById("activeTranscriptSnippet").textContent = clip.transcript_snippet;
+
+      // Video Player
+      const player = document.getElementById("clipVideoPlayer");
+      const overlay = document.getElementById("noVideoOverlay");
+      const downloadBtn = document.getElementById("downloadClipBtn");
+
+      if (clip.exported_file) {
+        overlay.classList.add("hidden");
+        player.src = `/api/video/${clip.id}`;
+        player.load();
+        downloadBtn.href = `/api/video/${clip.id}`;
+        downloadBtn.classList.remove("opacity-50", "pointer-events-none");
+      } else {
+        overlay.classList.remove("hidden");
+        player.removeAttribute("src");
+        downloadBtn.removeAttribute("href");
+        downloadBtn.classList.add("opacity-50", "pointer-events-none");
+      }
+    }
+
+    function openNewModal() {
+      const errBox = document.getElementById("modalErrorBox");
+      if (errBox) { errBox.classList.add("hidden"); errBox.textContent = ""; }
+      document.getElementById("newVideoModal").classList.remove("hidden");
+    }
+
+    function closeNewModal() {
+      document.getElementById("newVideoModal").classList.add("hidden");
+    }
+
+    async function handleProcess(e) {
+      e.preventDefault();
+      const btn = document.getElementById("submitProcessBtn");
+      const errBox = document.getElementById("modalErrorBox");
+      if (errBox) { errBox.classList.add("hidden"); errBox.textContent = ""; }
+
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> Processing Video...';
+
+      const payload = {
+        input_source: document.getElementById("inputSource").value.trim(),
+        top_n: parseInt(document.getElementById("inputTopN").value),
+        min_duration: parseFloat(document.getElementById("inputMinDur").value),
+        max_duration: parseFloat(document.getElementById("inputMaxDur").value),
+      };
+
+      try {
+        const res = await fetch("/api/process", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (res.ok && data.status === "ok") {
+          closeNewModal();
+          await loadReport();
+        } else {
+          const msg = data.detail || data.message || "Pipeline processing failed.";
+          if (errBox) {
+            errBox.textContent = "⚠️ " + msg;
+            errBox.classList.remove("hidden");
+          } else {
+            alert(msg);
+          }
+        }
+      } catch (err) {
+        if (errBox) {
+          errBox.textContent = "⚠️ Connection error: " + err.message;
+          errBox.classList.remove("hidden");
+        } else {
+          alert("Pipeline failed: " + err.message);
+        }
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<span>Start Clipping</span>';
+      }
+    }
+
+    // Initialize
+    loadReport();
+  </script>
+</body>
+</html>

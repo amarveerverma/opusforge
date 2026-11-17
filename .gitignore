@@ -1,0 +1,51 @@
+# Python Virtual Environment
+.venv/
+venv/
+env/
+
+# Python cache & build
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+build/
+dist/
+*.egg-info/
+
+# Node & Next.js
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+node_modules/
+.next/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# ClipForge Local Storage & Data
+data/
+temp/
+output/
+downloads/
+models/
+cache/
+logs/
+
+# Media & Temp files
+*.mp4
+*.webm
+*.mov
+*.mkv
+*.avi
+*.wav
+*.mp3
+*.ass
+cookies.txt
+
+# OS & Editor
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
