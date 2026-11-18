@@ -80,6 +80,65 @@ This launches both servers simultaneously:
 
 ---
 
+## 👥 How to Run on Another PC (Setup from Scratch)
+
+If you or anyone else wants to run ClipForge on another Windows, Mac, or Linux computer:
+
+### 1. Prerequisites
+- **Git**: [git-scm.com](https://git-scm.com/)
+- **Python**: 3.10 or 3.11 ([python.org](https://www.python.org/))
+- **Node.js**: 18.x or 20.x ([nodejs.org](https://nodejs.org/))
+- **FFmpeg**: Must be installed and added to your system `PATH` ([ffmpeg.org](https://ffmpeg.org/download.html) or `winget install Gyan.FFmpeg` on Windows)
+
+### 2. Clone the Repository
+```bash
+git clone https://github.com/amarveerverma/opusforge.git
+cd opusforge
+```
+
+### 3. Setup Backend (Python Virtual Environment)
+```bash
+# Create virtual environment
+python -m venv .venv
+
+# Activate it:
+# Windows (PowerShell):
+.venv\Scripts\Activate.ps1
+# Windows (CMD):
+.venv\Scripts\activate.bat
+# macOS / Linux:
+source .venv/bin/activate
+
+# Install Python dependencies
+pip install -r requirements.txt
+```
+
+*(Optional for NVIDIA GPU users)*: If you have an NVIDIA RTX GPU, ensure PyTorch with CUDA 12 is installed:
+```bash
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
+```
+
+### 4. Setup Frontend (Next.js)
+```bash
+cd frontend
+npm install
+cd ..
+```
+
+### 5. Launch ClipForge
+- **Windows**: Double-click `start_clipforge.bat` or run:
+  ```powershell
+  python scripts/run_clipforge.py
+  ```
+- **macOS / Linux**:
+  ```bash
+  python3 scripts/run_clipforge.py
+  ```
+
+Open your browser at **`http://localhost:3000`**!
+
+---
+
 ## 📱 User Workflow
 
 1. **Dashboard (`http://localhost:3000`)**:
