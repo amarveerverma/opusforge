@@ -159,7 +159,7 @@ export default function ProjectPage() {
             </h1>
             <p className="text-[11px] text-zinc-400 flex items-center gap-2">
               <span>Opus.pro Discovery Hub</span>
-              <span className="text-purple-400 font-mono font-medium">⚡ Powered by OmniRoute</span>
+              <span className="text-purple-400 font-mono font-medium">⚡ Universal AI Engine</span>
             </p>
           </div>
         </div>
@@ -186,7 +186,7 @@ export default function ProjectPage() {
             ) : (
               <>
                 <Zap className="w-3.5 h-3.5" />
-                <span>{clips.length > 0 ? "Re-Run OmniRoute Discovery" : "Run OmniRoute Discovery"}</span>
+                <span>{clips.length > 0 ? "Re-Run AI Discovery" : "Run AI Discovery"}</span>
               </>
             )}
           </button>

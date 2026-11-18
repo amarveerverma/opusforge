@@ -2,7 +2,7 @@ from fastapi import APIRouter
 from ..schemas.system import HealthResponse, SystemStatusResponse, OmniRouteTestRequest
 from ..telemetry import get_full_system_status
 from ..config import settings
-from ..core.omniroute_client import OmniRouteClient
+from ..core.omniroute_client import OmniRouteClient, UniversalAIClient
 
 router = APIRouter(tags=["System"])
 
@@ -22,6 +22,11 @@ async def system_status():
 
 @router.post("/omniroute/test")
 async def test_omniroute_connection(req: OmniRouteTestRequest):
-    """Verifies OmniRoute API key and connectivity."""
-    client = OmniRouteClient(api_key=req.api_key, base_url=req.base_url, model=req.model)
+    """Verifies AI provider API key, endpoint and connectivity."""
+    client = UniversalAIClient(
+        api_key=req.api_key,
+        base_url=req.base_url,
+        model=req.model,
+        provider=req.provider,
+    )
     return client.test_connection()

@@ -35,6 +35,7 @@ class HealthResponse(BaseModel):
     version: str
 
 class OmniRouteTestRequest(BaseModel):
-    api_key: str
+    api_key: Optional[str] = ""
     base_url: Optional[str] = None
     model: Optional[str] = None
+    provider: Optional[str] = "custom"

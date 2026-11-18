@@ -48,9 +48,10 @@ export default function Dashboard() {
   const [loading, setLoading] = useState<boolean>(true);
   const [omniModalOpen, setOmniModalOpen] = useState<boolean>(false);
   const [omniConfig, setOmniConfig] = useState<OmniRouteConfig>({
+    provider: "gemini",
     apiKey: "",
-    baseUrl: "http://localhost:20128/v1",
-    model: "google/gemini-2.0-flash-001",
+    baseUrl: "https://generativelanguage.googleapis.com/v1beta/openai",
+    model: "gemini-2.0-flash",
   });
 
   // Opus.pro Ingestion State
@@ -218,23 +219,28 @@ export default function Dashboard() {
 
         {/* Header Right Actions */}
         <div className="flex items-center gap-3">
-          {/* OmniRoute BYOK Status Button */}
+          {/* Universal AI Provider BYOK Button */}
           <button
             onClick={() => setOmniModalOpen(true)}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium border transition ${
+            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold border transition shadow-sm ${
               omniConfig.apiKey
-                ? "bg-emerald-950/40 text-emerald-300 border-emerald-500/40 hover:bg-emerald-900/40 shadow-sm shadow-emerald-500/10"
+                ? "bg-emerald-950/40 text-emerald-300 border-emerald-500/40 hover:bg-emerald-900/40"
                 : "bg-purple-950/40 text-purple-300 border-purple-500/40 hover:bg-purple-900/40"
             }`}
-            title="Configure OmniRoute universal AI decision engine"
+            title="Connect Any AI Provider (Gemini, Groq, DeepSeek, OpenAI, OmniRoute, etc.)"
           >
             <span
               className={`w-2 h-2 rounded-full ${
                 omniConfig.apiKey ? "bg-emerald-400 animate-pulse" : "bg-purple-400"
               }`}
             />
-            <span className="font-mono">
-              {omniConfig.apiKey ? "OmniRoute: Active" : "🔑 Connect OmniRoute Key"}
+            <span className="flex items-center gap-1.5">
+              <Key className="w-3.5 h-3.5 text-yellow-400" />
+              <span>
+                {omniConfig.apiKey
+                  ? `${omniConfig.provider?.toUpperCase() || "AI"}: Connected`
+                  : "Connect Any AI Provider"}
+              </span>
             </span>
           </button>
 
@@ -263,7 +269,7 @@ export default function Dashboard() {
             1 Long Video → <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-violet-300 to-indigo-400">10 Viral Shorts in 1 Click</span>
           </h1>
           <p className="text-sm md:text-base text-zinc-400 max-w-2xl mx-auto">
-            Automated hook evaluation, face-tracking 9:16 vertical reframe, and dynamic captions. Powered by your OmniRoute LLM engine.
+            Automated hook evaluation, face-tracking 9:16 vertical reframe, and dynamic captions. Powered by your connected AI Provider (Gemini, Groq, DeepSeek, OpenAI, OmniRoute).
           </p>
         </div>
 
@@ -434,7 +440,7 @@ export default function Dashboard() {
               className="w-full py-4 rounded-xl font-bold text-base bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-600 hover:from-purple-500 hover:to-indigo-500 text-white shadow-xl shadow-purple-600/30 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               <Zap className="w-5 h-5 text-yellow-300" />
-              <span>{uploading ? "Ingesting & Preparing Video..." : "Get Clips in 1 Click (OmniRoute + RTX 4060)"}</span>
+              <span>{uploading ? "Ingesting & Preparing Video..." : "Get Clips in 1 Click (AI Engine + RTX 4060)"}</span>
             </button>
           </form>
         </div>

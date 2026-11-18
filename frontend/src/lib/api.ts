@@ -248,34 +248,128 @@ export async function runAnalysis(projectId: string): Promise<any> {
   return res.json();
 }
 
-export interface OmniRouteConfig {
+export interface AIProviderConfig {
+  provider: string; // "gemini" | "groq" | "deepseek" | "openai" | "openrouter" | "omniroute" | "freellmapi" | "ollama" | "custom"
   apiKey: string;
   baseUrl: string;
   model: string;
 }
 
-export function getOmniRouteConfig(): OmniRouteConfig {
+export type OmniRouteConfig = AIProviderConfig;
+
+export const PROVIDER_PRESETS: Record<
+  string,
+  { name: string; baseUrl: string; defaultModel: string; keyHint: string; keyUrl: string; tag: string }
+> = {
+  gemini: {
+    name: "Google Gemini (Free Tier)",
+    baseUrl: "https://generativelanguage.googleapis.com/v1beta/openai",
+    defaultModel: "gemini-2.0-flash",
+    keyHint: "AIzaSy... (100% Free at aistudio.google.com)",
+    keyUrl: "https://aistudio.google.com/app/apikey",
+    tag: "Free Tier · 1500 RPD",
+  },
+  groq: {
+    name: "Groq (Ultra-Fast Free Tier)",
+    baseUrl: "https://api.groq.com/openai/v1",
+    defaultModel: "llama-3.3-70b-versatile",
+    keyHint: "gsk_... (Free at console.groq.com)",
+    keyUrl: "https://console.groq.com/keys",
+    tag: "Fastest · 14.4k RPD",
+  },
+  deepseek: {
+    name: "DeepSeek",
+    baseUrl: "https://api.deepseek.com/v1",
+    defaultModel: "deepseek-chat",
+    keyHint: "sk-... from platform.deepseek.com",
+    keyUrl: "https://platform.deepseek.com/api_keys",
+    tag: "V3 / R1 Reasoning",
+  },
+  openai: {
+    name: "OpenAI",
+    baseUrl: "https://api.openai.com/v1",
+    defaultModel: "gpt-4o-mini",
+    keyHint: "sk-proj-... from platform.openai.com",
+    keyUrl: "https://platform.openai.com/api-keys",
+    tag: "Official Models",
+  },
+  openrouter: {
+    name: "OpenRouter (Free & Paid)",
+    baseUrl: "https://openrouter.ai/api/v1",
+    defaultModel: "google/gemini-2.0-flash-001",
+    keyHint: "sk-or-v1-... from openrouter.ai",
+    keyUrl: "https://openrouter.ai/keys",
+    tag: "Aggregator",
+  },
+  omniroute: {
+    name: "OmniRoute (Local Gateway)",
+    baseUrl: "http://localhost:20128/v1",
+    defaultModel: "google/gemini-2.0-flash-001",
+    keyHint: "sk-omni-... from localhost:20128",
+    keyUrl: "http://localhost:20128/dashboard",
+    tag: "Local Router",
+  },
+  freellmapi: {
+    name: "FreeLLMAPI (Local Gateway)",
+    baseUrl: "http://localhost:3001/v1",
+    defaultModel: "google/gemini-2.0-flash-001",
+    keyHint: "freellmapi-... from localhost:3001",
+    keyUrl: "http://localhost:3001",
+    tag: "Free Pool",
+  },
+  ollama: {
+    name: "Ollama (100% Offline Local)",
+    baseUrl: "http://localhost:11434/v1",
+    defaultModel: "llama3.2",
+    keyHint: "No API key required",
+    keyUrl: "https://ollama.com",
+    tag: "Offline",
+  },
+  custom: {
+    name: "Custom OpenAI-Compatible Endpoint",
+    baseUrl: "http://localhost:8000/v1",
+    defaultModel: "custom-model",
+    keyHint: "Bearer API key if required",
+    keyUrl: "",
+    tag: "Custom",
+  },
+};
+
+export function getAIProviderConfig(): AIProviderConfig {
   if (typeof window === "undefined") {
-    return { apiKey: "", baseUrl: "http://localhost:20128/v1", model: "google/gemini-2.0-flash-001" };
+    return {
+      provider: "gemini",
+      apiKey: "",
+      baseUrl: "https://generativelanguage.googleapis.com/v1beta/openai",
+      model: "gemini-2.0-flash",
+    };
   }
-  const key = localStorage.getItem("clipforge_omniroute_key") || "";
-  const baseUrl = localStorage.getItem("clipforge_omniroute_url") || "http://localhost:20128/v1";
-  const model = localStorage.getItem("clipforge_omniroute_model") || "google/gemini-2.0-flash-001";
-  return { apiKey: key, baseUrl, model };
+  const provider = localStorage.getItem("clipforge_ai_provider") || "gemini";
+  const preset = PROVIDER_PRESETS[provider] || PROVIDER_PRESETS.gemini;
+  const apiKey = localStorage.getItem("clipforge_omniroute_key") || "";
+  const baseUrl = localStorage.getItem("clipforge_omniroute_url") || preset.baseUrl;
+  const model = localStorage.getItem("clipforge_omniroute_model") || preset.defaultModel;
+  return { provider, apiKey, baseUrl, model };
 }
 
-export function setOmniRouteConfig(config: Partial<OmniRouteConfig>): void {
+export const getOmniRouteConfig = getAIProviderConfig;
+
+export function setAIProviderConfig(config: Partial<AIProviderConfig>): void {
   if (typeof window === "undefined") return;
+  if (config.provider !== undefined) localStorage.setItem("clipforge_ai_provider", config.provider);
   if (config.apiKey !== undefined) localStorage.setItem("clipforge_omniroute_key", config.apiKey.trim());
   if (config.baseUrl !== undefined) localStorage.setItem("clipforge_omniroute_url", config.baseUrl.trim());
   if (config.model !== undefined) localStorage.setItem("clipforge_omniroute_model", config.model.trim());
 }
 
-export async function testOmniRouteConnection(config: OmniRouteConfig): Promise<{ success: boolean; error?: string; model?: string }> {
+export const setOmniRouteConfig = setAIProviderConfig;
+
+export async function testAIProviderConnection(config: AIProviderConfig): Promise<{ success: boolean; error?: string; model?: string; provider?: string }> {
   const res = await fetch(`${API_BASE}/omniroute/test`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
+      provider: config.provider,
       api_key: config.apiKey,
       base_url: config.baseUrl,
       model: config.model,
@@ -287,6 +381,8 @@ export async function testOmniRouteConnection(config: OmniRouteConfig): Promise<
   }
   return res.json();
 }
+
+export const testOmniRouteConnection = testAIProviderConnection;
 
 export async function discoverClips(projectId: string): Promise<Clip[]> {
   const omni = getOmniRouteConfig();
