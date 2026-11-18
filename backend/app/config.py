@@ -39,7 +39,7 @@ class Settings(BaseSettings):
     LOGS_DIR: Path = ROOT_DIR / "data" / "logs"
     
     # Hardware & Model Defaults
-    WHISPER_MODEL: str = "large-v3-turbo"
+    WHISPER_MODEL: str = "base"
     WHISPER_DEVICE: str = "cuda"
     WHISPER_COMPUTE_TYPE: str = "float16"
     

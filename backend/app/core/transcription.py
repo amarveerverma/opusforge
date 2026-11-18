@@ -145,7 +145,7 @@ def evict_model(model_ref=None):
 
 def transcribe_audio(
     audio_path: Path,
-    model_size: str = "large-v3-turbo",
+    model_size: Optional[str] = None,
     device: str = "cuda",
     compute_type: str = "float16",
     language: Optional[str] = None,
@@ -154,6 +154,8 @@ def transcribe_audio(
     Executes speech recognition with word-level timestamps on GPU,
     recording peak VRAM and releasing memory upon completion.
     """
+    if not model_size:
+        model_size = settings.WHISPER_MODEL
     setup_cuda_dlls()
     from faster_whisper import WhisperModel
     
@@ -284,6 +286,7 @@ def save_transcript_artifacts(project_dir: Path, result: TranscriptResult):
     """
     Saves immutable raw transcript, working transcript, plaintext, and SRT.
     """
+    project_dir = Path(project_dir)
     transcripts_dir = project_dir / "transcripts"
     transcripts_dir.mkdir(parents=True, exist_ok=True)
     

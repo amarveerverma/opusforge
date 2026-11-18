@@ -15,7 +15,7 @@ from ..core.transcription import (
 router = APIRouter(prefix="/projects/{project_id}/transcript", tags=["Transcripts"])
 
 class TranscribeRequest(BaseModel):
-    model_size: Optional[str] = "large-v3-turbo"
+    model_size: Optional[str] = "base"
     compute_type: Optional[str] = "float16"
     language: Optional[str] = None
 

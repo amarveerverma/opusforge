@@ -40,10 +40,15 @@ def detect_scenes(
     logger.info("Running scene detection on %s (threshold=%.1f)...", video_path, threshold)
     
     try:
-        scene_list = detect(
-            str(video_path),
-            ContentDetector(threshold=threshold, min_scene_len=int(min_scene_len_sec * 30))
-        )
+        video = scenedetect.open_video(str(video_path))
+        sm = scenedetect.SceneManager()
+        sm.auto_downscale = True
+        dur_sec = video.duration.seconds if hasattr(video.duration, "seconds") else (video.duration.get_seconds() if video.duration else 0)
+        frame_skip = 4 if dur_sec > 600 else 0
+        min_len = int(min_scene_len_sec * (video.frame_rate or 30.0))
+        sm.add_detector(ContentDetector(threshold=threshold, min_scene_len=min_len))
+        sm.detect_scenes(video, frame_skip=frame_skip)
+        scene_list = sm.get_scene_list()
     except Exception as e:
         logger.warning("Standard ContentDetector encountered issue: %s. Using fallback...", e)
         # Fallback to AdaptiveDetector
