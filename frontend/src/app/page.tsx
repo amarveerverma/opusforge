@@ -235,11 +235,11 @@ export default function Dashboard() {
               }`}
             />
             <span className="flex items-center gap-1.5">
-              <Key className="w-3.5 h-3.5 text-yellow-400" />
-              <span>
+              <Zap className="w-3.5 h-3.5 text-yellow-400" />
+              <span className="font-semibold">
                 {omniConfig.apiKey
-                  ? `${omniConfig.provider?.toUpperCase() || "AI"}: Connected`
-                  : "Connect Any AI Provider"}
+                  ? `${omniConfig.provider?.toUpperCase() || "AI"}: Active`
+                  : "Connect Any Provider"}
               </span>
             </span>
           </button>
