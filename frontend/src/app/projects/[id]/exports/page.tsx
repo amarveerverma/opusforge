@@ -83,24 +83,25 @@ export default function ExportsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
-      {/* Header */}
-      <header className="border-b border-slate-800 bg-slate-900/60 backdrop-blur sticky top-0 z-40 px-6 py-4 flex items-center justify-between">
+    <div className="min-h-screen bg-[#0A0B0D] text-slate-100 flex flex-col font-sans">
+      {/* Header — Gemini Carbon */}
+      <header className="border-b border-white/[0.08] bg-[#0E1014]/90 backdrop-blur-md sticky top-0 z-40 px-6 py-3.5 flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Link
             href={`/projects/${projectId}`}
-            className="p-2 rounded-lg bg-slate-800/80 hover:bg-slate-750 text-slate-400 hover:text-white transition"
+            className="p-2 rounded-lg bg-[#16191F] hover:bg-[#1E222A] text-slate-400 hover:text-white transition border border-white/[0.08]"
+            title="Back to Project"
           >
-            <ArrowLeft className="w-5 h-5" />
+            <ArrowLeft className="w-4 h-4" />
           </Link>
           <div>
-            <h1 className="text-lg font-bold text-white flex items-center gap-2">
-              Exports Library
-              <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-normal">
+            <h1 className="text-base font-bold text-white flex items-center gap-2">
+              Rendered Exports Library
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-semibold">
                 {renders.length} Rendered Shorts
               </span>
             </h1>
-            <p className="text-xs text-slate-400">
+            <p className="text-[11px] text-slate-400 font-mono">
               {project?.title || "Project Exports"}
             </p>
           </div>
@@ -108,29 +109,29 @@ export default function ExportsPage() {
 
         <Link
           href={`/projects/${projectId}`}
-          className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold flex items-center gap-2 transition"
+          className="px-3.5 py-1.5 rounded-lg bg-sky-400 hover:bg-sky-300 text-slate-950 text-xs font-semibold flex items-center gap-2 transition shadow-sm"
         >
-          <Sliders className="w-4 h-4" />
-          Back to Project Clips
+          <Sliders className="w-3.5 h-3.5" />
+          <span>Back to Project Clips</span>
         </Link>
       </header>
 
       {/* Main Grid */}
-      <main className="flex-1 p-8 max-w-7xl mx-auto w-full space-y-6">
+      <main className="flex-1 p-6 max-w-7xl mx-auto w-full space-y-6">
         {renders.length === 0 ? (
-          <div className="text-center py-20 bg-slate-900/30 border border-dashed border-slate-800 rounded-3xl space-y-4">
-            <Film className="w-12 h-12 text-slate-600 mx-auto" />
+          <div className="text-center py-20 bg-[#111317]/50 border border-dashed border-white/[0.10] rounded-xl space-y-4">
+            <Film className="w-10 h-10 text-slate-600 mx-auto" strokeWidth={1.5} />
             <div className="space-y-1">
-              <p className="text-base font-semibold text-slate-300">No rendered shorts yet</p>
-              <p className="text-xs text-slate-500 max-w-sm mx-auto">
-                Open your project candidates and click "Render" or customize them in the Clip Studio Editor.
+              <p className="text-sm font-semibold text-slate-200">No rendered shorts yet</p>
+              <p className="text-xs text-slate-400 max-w-sm mx-auto">
+                Select your candidate clips and click "Render" or customize subtitles and framing in the Clip Studio.
               </p>
             </div>
             <Link
               href={`/projects/${projectId}`}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-medium text-white transition border border-slate-700"
+              className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-lg bg-[#16191F] hover:bg-[#1E222A] text-xs font-medium text-slate-200 transition border border-white/[0.08]"
             >
-              Browse Clips
+              Browse Candidate Clips
             </Link>
           </div>
         ) : (
@@ -138,7 +139,7 @@ export default function ExportsPage() {
             {renders.map((render) => (
               <div
                 key={render.id}
-                className="bg-slate-900/80 border border-slate-800 rounded-2xl overflow-hidden shadow-lg flex flex-col justify-between"
+                className="bg-[#111317] border border-white/[0.08] hover:border-white/[0.16] rounded-xl overflow-hidden shadow-carbon-card flex flex-col justify-between transition-all"
               >
                 {/* 9:16 Video Player */}
                 <div className="w-full bg-black flex items-center justify-center relative aspect-[9/16] max-h-[460px] overflow-hidden">
@@ -148,43 +149,43 @@ export default function ExportsPage() {
                     className="w-full h-full object-cover"
                     playsInline
                   />
-                  <div className="absolute top-3 left-3 bg-black/60 backdrop-blur px-2 py-0.5 rounded text-[10px] font-mono text-emerald-400 border border-emerald-500/20">
-                    {render.encoder_used.toUpperCase()}
+                  <div className="absolute top-3 left-3 bg-[#0A0B0D]/80 backdrop-blur px-2 py-0.5 rounded text-[10px] font-mono text-emerald-400 border border-emerald-500/30">
+                    {render.encoder_used.toUpperCase()} NVENC
                   </div>
                 </div>
 
                 {/* Video Info & Controls */}
                 <div className="p-4 space-y-3">
-                  <div className="flex items-center justify-between text-xs text-slate-400 font-mono">
+                  <div className="flex items-center justify-between text-[11px] text-slate-400 font-mono">
                     <span className="flex items-center gap-1">
-                      <Clock className="w-3.5 h-3.5 text-slate-500" />
+                      <Clock className="w-3 h-3 text-slate-500" />
                       {formatSeconds(render.duration)}
                     </span>
                     <span className="flex items-center gap-1">
-                      <HardDrive className="w-3.5 h-3.5 text-slate-500" />
+                      <HardDrive className="w-3 h-3 text-slate-500" />
                       {formatBytes(render.file_size_bytes)}
                     </span>
-                    <span className="bg-slate-800 px-1.5 py-0.5 rounded text-[10px]">
+                    <span className="bg-[#16191F] border border-white/[0.08] px-1.5 py-0.5 rounded text-[10px]">
                       {render.width}x{render.height}
                     </span>
                   </div>
 
-                  <div className="pt-2 border-t border-slate-800/80 grid grid-cols-2 gap-2">
+                  <div className="pt-2 border-t border-white/[0.06] grid grid-cols-2 gap-2">
                     <button
                       onClick={() => handleReveal(render.id)}
-                      className="py-2 rounded-lg bg-slate-800 hover:bg-slate-750 text-slate-200 text-xs font-medium flex items-center justify-center gap-1.5 transition border border-slate-700"
+                      className="py-1.5 rounded-lg bg-[#16191F] hover:bg-[#1E222A] text-slate-200 text-xs font-medium flex items-center justify-center gap-1.5 transition border border-white/[0.08]"
                     >
                       <FolderOpen className="w-3.5 h-3.5 text-amber-400" />
-                      Explorer
+                      <span>Explorer</span>
                     </button>
 
                     <a
                       href={getRenderDownloadUrl(render.id)}
                       download
-                      className="py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition shadow"
+                      className="py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-semibold flex items-center justify-center gap-1.5 transition shadow-sm"
                     >
                       <Download className="w-3.5 h-3.5" />
-                      Download
+                      <span>Download</span>
                     </a>
                   </div>
                 </div>

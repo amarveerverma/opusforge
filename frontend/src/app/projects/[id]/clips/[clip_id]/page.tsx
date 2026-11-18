@@ -264,25 +264,26 @@ export default function ClipEditorPage() {
     : getVideoStreamUrl(project.id);
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
-      {/* Top Header */}
-      <header className="border-b border-slate-800 bg-slate-900/60 backdrop-blur sticky top-0 z-40 px-6 py-4 flex items-center justify-between">
+    <div className="min-h-screen bg-[#0A0B0D] text-slate-100 flex flex-col font-sans">
+      {/* Top Header — Gemini Carbon Studio Editor */}
+      <header className="border-b border-white/[0.08] bg-[#0E1014]/90 backdrop-blur-md sticky top-0 z-40 px-6 py-3.5 flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Link
             href={`/projects/${projectId}`}
-            className="p-2 rounded-lg bg-slate-800/80 hover:bg-slate-750 text-slate-400 hover:text-white transition"
+            className="p-2 rounded-lg bg-[#16191F] hover:bg-[#1E222A] text-slate-400 hover:text-white transition border border-white/[0.08]"
+            title="Back to Project"
           >
-            <ArrowLeft className="w-5 h-5" />
+            <ArrowLeft className="w-4 h-4" />
           </Link>
           <div className="flex-1 max-w-xl">
             <input
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="bg-transparent border border-transparent hover:border-slate-700 focus:border-indigo-500 focus:bg-slate-900 rounded px-2 py-1 text-base font-bold text-white transition outline-none w-full"
+              className="bg-transparent border border-transparent hover:border-white/[0.12] focus:border-sky-400 focus:bg-[#16191F] rounded-md px-2 py-0.5 text-sm font-bold text-white transition outline-none w-full"
             />
-            <p className="text-xs text-slate-400 px-2 flex items-center gap-2">
-              <span>Opus Virality: <strong className="text-emerald-400">{clip.letter_grade} ({Math.round(clip.virality_score)}/100)</strong></span>
+            <p className="text-[11px] font-mono text-slate-400 px-2 flex items-center gap-2 mt-0.5">
+              <span>Opus Virality: <strong className="text-sky-400">{clip.letter_grade} ({Math.round(clip.virality_score)}/100)</strong></span>
               <span>·</span>
               <span>Duration: {(endTime - startTime).toFixed(1)}s</span>
             </p>
@@ -290,15 +291,15 @@ export default function ClipEditorPage() {
         </div>
 
         {/* Action Controls */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5">
           {renderData && (
             <button
               onClick={handleReveal}
-              className="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-750 border border-slate-700 text-xs font-medium flex items-center gap-1.5 transition text-slate-300"
+              className="px-3 py-1.5 rounded-lg bg-[#16191F] hover:bg-[#1E222A] border border-white/[0.08] text-xs font-medium flex items-center gap-1.5 transition text-slate-300"
               title="Reveal in Windows Explorer"
             >
-              <FolderOpen className="w-4 h-4 text-amber-400" />
-              Reveal
+              <FolderOpen className="w-3.5 h-3.5 text-amber-400" />
+              <span>Reveal</span>
             </button>
           )}
 
@@ -306,31 +307,31 @@ export default function ClipEditorPage() {
             <a
               href={getRenderDownloadUrl(renderData.id)}
               download
-              className="px-3 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium flex items-center gap-1.5 transition shadow-lg shadow-emerald-600/20"
+              className="px-3 py-1.5 rounded-lg bg-[#16191F] hover:bg-[#1E222A] border border-white/[0.08] text-slate-200 text-xs font-medium flex items-center gap-1.5 transition"
             >
-              <Download className="w-4 h-4" />
-              Download MP4
+              <Download className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Download MP4</span>
             </a>
           )}
 
           <button
             onClick={handleTriggerRender}
             disabled={isRendering}
-            className={`px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 transition shadow-lg ${
+            className={`px-4 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-2 transition shadow-sm ${
               isRendering
-                ? "bg-indigo-600/50 cursor-not-allowed text-indigo-200"
-                : "bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-600/30"
+                ? "bg-emerald-500/50 cursor-not-allowed text-slate-950"
+                : "bg-emerald-500 hover:bg-emerald-400 text-slate-950"
             }`}
           >
             {isRendering ? (
               <>
-                <RefreshCw className="w-4 h-4 animate-spin" />
-                Rendering NVENC...
+                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                <span>Rendering NVENC...</span>
               </>
             ) : (
               <>
-                <Zap className="w-4 h-4 text-amber-300" />
-                {clip.rendered ? "Re-Render Short" : "Render 9:16 Short"}
+                <Zap className="w-3.5 h-3.5 fill-slate-950" />
+                <span>{clip.rendered ? "Re-Render NVENC" : "Render 9:16 Short"}</span>
               </>
             )}
           </button>
@@ -341,7 +342,7 @@ export default function ClipEditorPage() {
       <main className="flex-1 p-6 max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         {/* Left Column: 9:16 Vertical Video Studio Player */}
         <div className="lg:col-span-5 flex flex-col items-center space-y-4">
-          <div className="relative w-[320px] h-[568px] sm:w-[340px] sm:h-[604px] bg-black rounded-3xl overflow-hidden border-2 border-slate-800 shadow-2xl flex items-center justify-center group">
+          <div className="relative w-[320px] h-[568px] sm:w-[340px] sm:h-[604px] bg-black rounded-3xl overflow-hidden border-2 border-white/[0.12] shadow-2xl flex items-center justify-center group">
             <video
               ref={videoRef}
               src={activeVideoSrc}
@@ -362,12 +363,12 @@ export default function ClipEditorPage() {
             {/* Play / Pause Overlay Button */}
             <button
               onClick={togglePlay}
-              className="absolute inset-0 m-auto w-16 h-16 rounded-full bg-black/50 hover:bg-black/70 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-sm"
+              className="absolute inset-0 m-auto w-14 h-14 rounded-full bg-black/60 hover:bg-black/80 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-sm"
             >
-              {isPlaying ? <Pause className="w-8 h-8" /> : <Play className="w-8 h-8 ml-1" />}
+              {isPlaying ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6 ml-0.5" />}
             </button>
 
-            {/* Caption Preview Overlay (Simulated when watching source video) */}
+            {/* Caption Preview Overlay */}
             {!isViewingRendered && (
               <div
                 className={`absolute bottom-16 inset-x-4 text-center pointer-events-none ${
@@ -380,31 +381,31 @@ export default function ClipEditorPage() {
               >
                 <span
                   style={{ fontSize: `${Math.round(captionFontSize * 0.4)}px` }}
-                  className="bg-black/80 px-3 py-1.5 rounded-lg text-white font-bold drop-shadow-[0_4px_4px_rgba(0,0,0,1)] border border-slate-800"
+                  className="bg-black/80 px-3 py-1.5 rounded-lg text-white font-bold drop-shadow-[0_4px_4px_rgba(0,0,0,1)] border border-white/10"
                 >
-                  <span className="text-emerald-400">LIVE PREVIEW:</span> {clip.title}
+                  <span className="text-sky-400">PREVIEW:</span> {clip.title}
                 </span>
               </div>
             )}
           </div>
 
           {/* Timeline Playback Controls */}
-          <div className="w-[340px] bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3">
+          <div className="w-[340px] bg-[#111317] border border-white/[0.08] rounded-xl p-4 space-y-3 shadow-carbon-card">
             <div className="flex items-center justify-between text-xs font-mono text-slate-400">
               <span>{formatSeconds(currentTime)}</span>
               <div className="flex items-center gap-2">
                 <button
                   onClick={seekToStart}
-                  className="p-1 rounded hover:bg-slate-800 text-slate-400 hover:text-white"
+                  className="p-1 rounded hover:bg-[#16191F] text-slate-400 hover:text-white transition"
                   title="Return to start"
                 >
-                  <RotateCcw className="w-4 h-4" />
+                  <RotateCcw className="w-3.5 h-3.5" />
                 </button>
                 <button
                   onClick={togglePlay}
-                  className="p-1 rounded bg-indigo-600 hover:bg-indigo-500 text-white"
+                  className="p-1.5 rounded-md bg-sky-400 hover:bg-sky-300 text-slate-950 font-bold transition"
                 >
-                  {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+                  {isPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5 ml-0.5" />}
                 </button>
               </div>
               <span>{formatSeconds(endTime)}</span>
@@ -424,36 +425,36 @@ export default function ClipEditorPage() {
                 }
                 setCurrentTime(val);
               }}
-              className="w-full accent-indigo-500 cursor-pointer"
+              className="w-full accent-sky-400 cursor-pointer"
             />
 
             {/* Trim Boundaries */}
-            <div className="pt-2 border-t border-slate-800 grid grid-cols-2 gap-3 text-xs">
+            <div className="pt-2 border-t border-white/[0.08] grid grid-cols-2 gap-3 text-xs">
               <div>
-                <label className="text-slate-400 block mb-1">Start Trim (s)</label>
+                <label className="text-slate-400 block mb-1 font-mono text-[11px]">Start Trim (s)</label>
                 <input
                   type="number"
                   step={0.1}
                   value={startTime}
                   onChange={(e) => setStartTime(parseFloat(e.target.value) || 0)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded px-2 py-1 font-mono text-white text-xs"
+                  className="w-full bg-[#16191F] border border-white/[0.08] focus:border-sky-400 rounded-md px-2 py-1 font-mono text-white text-xs outline-none"
                 />
               </div>
               <div>
-                <label className="text-slate-400 block mb-1">End Trim (s)</label>
+                <label className="text-slate-400 block mb-1 font-mono text-[11px]">End Trim (s)</label>
                 <input
                   type="number"
                   step={0.1}
                   value={endTime}
                   onChange={(e) => setEndTime(parseFloat(e.target.value) || 0)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded px-2 py-1 font-mono text-white text-xs"
+                  className="w-full bg-[#16191F] border border-white/[0.08] focus:border-sky-400 rounded-md px-2 py-1 font-mono text-white text-xs outline-none"
                 />
               </div>
             </div>
 
             <button
               onClick={handleSaveTrim}
-              className="w-full py-1.5 rounded-lg bg-slate-800 hover:bg-slate-750 border border-slate-700 text-xs font-semibold text-slate-200 transition"
+              className="w-full py-1.5 rounded-lg bg-[#16191F] hover:bg-[#1E222A] border border-white/[0.08] text-xs font-semibold text-slate-200 transition"
             >
               Save Trim Boundaries
             </button>
@@ -461,43 +462,43 @@ export default function ClipEditorPage() {
         </div>
 
         {/* Right Column: Studio Settings Tabs */}
-        <div className="lg:col-span-7 bg-slate-900/60 border border-slate-800 rounded-3xl p-6 space-y-6">
+        <div className="lg:col-span-7 bg-[#111317] border border-white/[0.08] rounded-xl p-6 space-y-6 shadow-carbon-card">
           {/* Tab Selector */}
-          <div className="flex items-center gap-2 border-b border-slate-800 pb-4">
+          <div className="flex items-center gap-2 border-b border-white/[0.08] pb-4">
             <button
               onClick={() => setActiveTab("framing")}
-              className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition ${
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-2 transition ${
                 activeTab === "framing"
-                  ? "bg-indigo-600 text-white"
-                  : "bg-slate-800/60 text-slate-400 hover:text-white"
+                  ? "bg-sky-400 text-slate-950 shadow-sm"
+                  : "bg-[#16191F] text-slate-400 hover:text-white border border-white/[0.08]"
               }`}
             >
-              <Crop className="w-4 h-4" />
+              <Crop className="w-3.5 h-3.5" />
               9:16 Framing
             </button>
 
             <button
               onClick={() => setActiveTab("captions")}
-              className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition ${
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-2 transition ${
                 activeTab === "captions"
-                  ? "bg-indigo-600 text-white"
-                  : "bg-slate-800/60 text-slate-400 hover:text-white"
+                  ? "bg-sky-400 text-slate-950 shadow-sm"
+                  : "bg-[#16191F] text-slate-400 hover:text-white border border-white/[0.08]"
               }`}
             >
-              <Type className="w-4 h-4" />
-              Captions & Presets
+              <Type className="w-3.5 h-3.5" />
+              Captions & Styles
             </button>
 
             <button
               onClick={() => setActiveTab("transcript")}
-              className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition ${
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-2 transition ${
                 activeTab === "transcript"
-                  ? "bg-indigo-600 text-white"
-                  : "bg-slate-800/60 text-slate-400 hover:text-white"
+                  ? "bg-sky-400 text-slate-950 shadow-sm"
+                  : "bg-[#16191F] text-slate-400 hover:text-white border border-white/[0.08]"
               }`}
             >
-              <Sliders className="w-4 h-4" />
-              Virality & Rationale
+              <Sliders className="w-3.5 h-3.5" />
+              Virality Breakdown
             </button>
           </div>
 

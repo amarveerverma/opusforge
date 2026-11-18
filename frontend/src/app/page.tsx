@@ -173,85 +173,85 @@ export default function Dashboard() {
     : 0;
 
   return (
-    <div className="min-h-screen bg-[#09090B] text-zinc-100 flex flex-col">
-      {/* Top Navigation Bar */}
-      <header className="border-b border-white/5 bg-[#0D0D11]/80 backdrop-blur-md sticky top-0 z-40 px-6 py-3.5 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-violet-600 to-indigo-500 flex items-center justify-center shadow-lg shadow-violet-600/20">
-            <Film className="w-5 h-5 text-white" />
+    <div className="min-h-screen bg-[#0A0B0D] text-slate-100 flex flex-col font-sans">
+      {/* Top Navigation Bar — Gemini Carbon Studio Header */}
+      <header className="border-b border-white/[0.08] bg-[#0E1014]/90 backdrop-blur-md sticky top-0 z-40 px-6 py-3.5 flex items-center justify-between">
+        <div className="flex items-center gap-3.5">
+          <div className="w-8 h-8 rounded-lg bg-sky-400/10 border border-sky-400/30 flex items-center justify-center shadow-sm">
+            <Film className="w-4 h-4 text-sky-400" strokeWidth={1.75} />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="font-bold text-lg tracking-tight bg-gradient-to-r from-white via-zinc-200 to-zinc-400 bg-clip-text text-transparent">
-                ClipForge
+              <span className="font-bold text-base tracking-tight text-white flex items-center gap-1.5">
+                CLIPFORGE <span className="w-1.5 h-1.5 rounded-full bg-sky-400 inline-block animate-pulse" />
               </span>
-              <span className="text-[10px] font-semibold tracking-wider uppercase px-2 py-0.5 rounded-full bg-violet-500/10 text-violet-400 border border-violet-500/20">
-                Local Studio
+              <span className="text-[10px] font-mono uppercase tracking-wider px-2 py-0.5 rounded-md bg-[#16191F] text-slate-300 border border-white/[0.08]">
+                Gemini Carbon Studio
               </span>
             </div>
-            <p className="text-xs text-zinc-400">OpusClip-inspired AI Video Studio</p>
+            <p className="text-[11px] text-slate-400">100% Offline AI Video Repurposing Suite</p>
           </div>
         </div>
 
         {/* Live Hardware Telemetry Pills */}
         <div className="flex items-center gap-3">
           {/* GPU Telemetry */}
-          <div className="hidden lg:flex items-center gap-3 px-3.5 py-1.5 rounded-lg bg-zinc-900/90 border border-white/5 text-xs">
+          <div className="hidden lg:flex items-center gap-3 px-3.5 py-1.5 rounded-lg bg-[#111317] border border-white/[0.08] text-xs">
             <div className="flex items-center gap-1.5 text-emerald-400 font-medium">
-              <Zap className="w-3.5 h-3.5 fill-emerald-400/20" />
-              <span>{systemStatus?.gpu.name || "RTX GPU"}</span>
+              <Zap className="w-3.5 h-3.5 fill-emerald-400/20" strokeWidth={1.75} />
+              <span>{systemStatus?.gpu.name || "RTX 4060 GPU"}</span>
             </div>
-            <div className="h-3 w-[1px] bg-white/10" />
+            <div className="h-3 w-[1px] bg-white/[0.10]" />
             <div className="flex items-center gap-2">
-              <span className="text-zinc-400">VRAM:</span>
-              <div className="w-16 h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+              <span className="text-slate-400">VRAM:</span>
+              <div className="w-16 h-1.5 bg-[#1E222A] rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-violet-500 rounded-full transition-all duration-500"
+                  className="h-full bg-sky-400 rounded-full transition-all duration-500"
                   style={{ width: `${vramPercent}%` }}
                 />
               </div>
-              <span className="font-mono text-zinc-300">
+              <span className="font-mono text-slate-200 text-[11px]">
                 {systemStatus ? `${systemStatus.gpu.vram_used_mb}MB / ${systemStatus.gpu.vram_total_mb}MB` : "--"}
               </span>
             </div>
           </div>
 
           {/* RAM Telemetry */}
-          <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-zinc-900/90 border border-white/5 text-xs text-zinc-400">
-            <Cpu className="w-3.5 h-3.5 text-zinc-400" />
+          <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#111317] border border-white/[0.08] text-xs text-slate-400">
+            <Cpu className="w-3.5 h-3.5 text-slate-400" strokeWidth={1.75} />
             <span>RAM:</span>
-            <span className="font-mono text-zinc-200">
+            <span className="font-mono text-slate-200 text-[11px]">
               {systemStatus ? `${systemStatus.ram.used_gb} / ${systemStatus.ram.total_gb} GB` : "--"}
             </span>
           </div>
 
           {/* Disk Telemetry */}
-          <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-zinc-900/90 border border-white/5 text-xs text-zinc-400">
-            <HardDrive className="w-3.5 h-3.5 text-zinc-400" />
-            <span className="font-mono text-zinc-200">
+          <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#111317] border border-white/[0.08] text-xs text-slate-400">
+            <HardDrive className="w-3.5 h-3.5 text-slate-400" strokeWidth={1.75} />
+            <span className="font-mono text-slate-200 text-[11px]">
               {systemStatus ? `${systemStatus.disk.free_gb} GB Free` : "--"}
             </span>
           </div>
 
           {/* Server Status Dot */}
-          <div className="flex items-center gap-2 px-2.5 py-1 rounded-full bg-zinc-900 border border-white/5 text-xs">
+          <div className="flex items-center gap-2 px-2.5 py-1 rounded-lg bg-[#111317] border border-white/[0.08] text-xs">
             <span
               className={`w-2 h-2 rounded-full ${
-                backendOnline ? "bg-emerald-500 shadow-sm shadow-emerald-500/50 animate-pulse" : "bg-rose-500"
+                backendOnline ? "bg-emerald-400 shadow-sm shadow-emerald-400/50 animate-pulse" : "bg-rose-500"
               }`}
             />
-            <span className="text-zinc-300 font-medium">
-              {backendOnline ? "Local GPU Engine" : "Offline"}
+            <span className="text-slate-300 font-medium text-[11px]">
+              {backendOnline ? "CUDA Hardware Active" : "Offline"}
             </span>
           </div>
 
           {/* New Project Button */}
           <button
             onClick={() => setModalOpen(true)}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-violet-600 hover:bg-violet-500 text-white font-medium text-xs tracking-wide shadow-md shadow-violet-600/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
+            className="flex items-center gap-2 px-3.5 py-1.5 rounded-lg bg-sky-400 hover:bg-sky-300 text-slate-950 font-semibold text-xs tracking-wide shadow-sm transition-all hover:scale-[1.01] active:scale-[0.99]"
           >
-            <Plus className="w-4 h-4" />
-            <span>New Project</span>
+            <Plus className="w-3.5 h-3.5" strokeWidth={2.5} />
+            <span>+ New Project</span>
           </button>
         </div>
       </header>
@@ -274,42 +274,42 @@ export default function Dashboard() {
 
         {/* Studio Overview Metrics */}
         <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          <div className="p-5 rounded-2xl bg-[#121216] border border-white/5 hover:border-white/10 transition-colors">
-            <div className="flex items-center justify-between text-zinc-400 mb-3">
-              <span className="text-xs font-medium uppercase tracking-wider">Total Projects</span>
-              <Video className="w-4 h-4 text-violet-400" />
+          <div className="p-5 rounded-xl bg-[#111317] border border-white/[0.08] hover:border-white/[0.14] transition-all shadow-carbon-card">
+            <div className="flex items-center justify-between text-slate-400 mb-2">
+              <span className="text-[11px] font-mono uppercase tracking-wider text-slate-400">Total Projects</span>
+              <Video className="w-4 h-4 text-sky-400" strokeWidth={1.75} />
             </div>
-            <div className="text-2xl font-bold tracking-tight text-white">{projects.length}</div>
-            <p className="text-xs text-zinc-500 mt-1">Saved locally on your PC</p>
+            <div className="text-2xl font-bold font-mono tracking-tight text-white">{projects.length}</div>
+            <p className="text-[11px] text-slate-400 mt-1">Saved locally in SQLite WAL</p>
           </div>
 
-          <div className="p-5 rounded-2xl bg-[#121216] border border-white/5 hover:border-white/10 transition-colors">
-            <div className="flex items-center justify-between text-zinc-400 mb-3">
-              <span className="text-xs font-medium uppercase tracking-wider">Target Hardware</span>
-              <Cpu className="w-4 h-4 text-emerald-400" />
+          <div className="p-5 rounded-xl bg-[#111317] border border-white/[0.08] hover:border-white/[0.14] transition-all shadow-carbon-card">
+            <div className="flex items-center justify-between text-slate-400 mb-2">
+              <span className="text-[11px] font-mono uppercase tracking-wider text-slate-400">Target Hardware</span>
+              <Cpu className="w-4 h-4 text-emerald-400" strokeWidth={1.75} />
             </div>
-            <div className="text-lg font-bold tracking-tight text-zinc-100 truncate">
+            <div className="text-lg font-bold tracking-tight text-slate-100 truncate">
               {systemStatus?.gpu.name || "NVIDIA RTX 4060"}
             </div>
-            <p className="text-xs text-emerald-400/90 mt-1">8 GB VRAM · CUDA 12.2 Active</p>
+            <p className="text-[11px] text-emerald-400/90 mt-1">8 GB VRAM · CUDA 12.2 FP16 Active</p>
           </div>
 
-          <div className="p-5 rounded-2xl bg-[#121216] border border-white/5 hover:border-white/10 transition-colors">
-            <div className="flex items-center justify-between text-zinc-400 mb-3">
-              <span className="text-xs font-medium uppercase tracking-wider">Hardware NVENC</span>
-              <Zap className="w-4 h-4 text-amber-400" />
+          <div className="p-5 rounded-xl bg-[#111317] border border-white/[0.08] hover:border-white/[0.14] transition-all shadow-carbon-card">
+            <div className="flex items-center justify-between text-slate-400 mb-2">
+              <span className="text-[11px] font-mono uppercase tracking-wider text-slate-400">NVENC Engine</span>
+              <Zap className="w-4 h-4 text-amber-400" strokeWidth={1.75} />
             </div>
-            <div className="text-2xl font-bold tracking-tight text-white">Enabled</div>
-            <p className="text-xs text-zinc-500 mt-1">h264_nvenc, hevc, av1 verified</p>
+            <div className="text-2xl font-bold font-mono tracking-tight text-white">Ready</div>
+            <p className="text-[11px] text-slate-400 mt-1">0.000s Audio/Video Drift</p>
           </div>
 
-          <div className="p-5 rounded-2xl bg-[#121216] border border-white/5 hover:border-white/10 transition-colors">
-            <div className="flex items-center justify-between text-zinc-400 mb-3">
-              <span className="text-xs font-medium uppercase tracking-wider">Privacy Mode</span>
-              <Sparkles className="w-4 h-4 text-violet-400" />
+          <div className="p-5 rounded-xl bg-[#111317] border border-white/[0.08] hover:border-white/[0.14] transition-all shadow-carbon-card">
+            <div className="flex items-center justify-between text-slate-400 mb-2">
+              <span className="text-[11px] font-mono uppercase tracking-wider text-slate-400">Privacy Mode</span>
+              <Sparkles className="w-4 h-4 text-sky-400" strokeWidth={1.75} />
             </div>
-            <div className="text-2xl font-bold tracking-tight text-white">100% Local</div>
-            <p className="text-xs text-zinc-500 mt-1">No videos sent to the cloud</p>
+            <div className="text-2xl font-bold font-mono tracking-tight text-white">100% Local</div>
+            <p className="text-[11px] text-slate-400 mt-1">Zero cloud dependencies</p>
           </div>
         </section>
 
@@ -317,12 +317,12 @@ export default function Dashboard() {
         <section>
           <div className="flex items-center justify-between mb-5">
             <div>
-              <h2 className="text-lg font-bold tracking-tight text-white">Recent Projects</h2>
-              <p className="text-xs text-zinc-400">Manage and inspect your video clipping pipelines</p>
+              <h2 className="text-base font-bold tracking-tight text-white">Active Projects</h2>
+              <p className="text-xs text-slate-400">Video source files, AI transcripts, and 9:16 virality candidate clips</p>
             </div>
             <button
               onClick={loadData}
-              className="p-2 rounded-lg bg-zinc-900 border border-white/5 hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors"
+              className="p-2 rounded-lg bg-[#16191F] border border-white/[0.08] hover:bg-[#1E222A] text-slate-400 hover:text-white transition-colors"
               title="Refresh projects"
             >
               <RefreshCw className="w-4 h-4" />
@@ -337,19 +337,19 @@ export default function Dashboard() {
               </div>
             </div>
           ) : projects.length === 0 ? (
-            <div className="h-72 rounded-2xl border border-dashed border-white/10 bg-[#121216]/40 flex flex-col items-center justify-center text-center p-6">
-              <div className="w-14 h-14 rounded-2xl bg-violet-600/10 border border-violet-500/20 flex items-center justify-center text-violet-400 mb-4">
-                <Video className="w-7 h-7" />
+            <div className="h-72 rounded-xl border border-dashed border-white/[0.10] bg-[#111317]/50 flex flex-col items-center justify-center text-center p-6">
+              <div className="w-12 h-12 rounded-xl bg-sky-400/10 border border-sky-400/20 flex items-center justify-center text-sky-400 mb-4">
+                <Video className="w-6 h-6" strokeWidth={1.75} />
               </div>
-              <h3 className="font-semibold text-base text-zinc-200 mb-1">No Projects Yet</h3>
-              <p className="text-xs text-zinc-400 max-w-sm mb-5">
-                Create your first project, upload a video, and let the local AI find viral 9:16 short moments automatically.
+              <h3 className="font-semibold text-sm text-slate-200 mb-1">No Projects in Local Storage</h3>
+              <p className="text-xs text-slate-400 max-w-sm mb-5">
+                Import a video or paste a YouTube URL to discover viral 9:16 vertical clips on your RTX GPU.
               </p>
               <button
                 onClick={() => setModalOpen(true)}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-violet-600 hover:bg-violet-500 text-white font-medium text-xs tracking-wide shadow-md transition-all"
+                className="flex items-center gap-2 px-3.5 py-1.5 rounded-lg bg-sky-400 hover:bg-sky-300 text-slate-950 font-semibold text-xs tracking-wide shadow-sm transition-all"
               >
-                <Plus className="w-4 h-4" />
+                <Plus className="w-3.5 h-3.5" strokeWidth={2.5} />
                 <span>Create New Project</span>
               </button>
             </div>
@@ -360,32 +360,31 @@ export default function Dashboard() {
                 return (
                   <div
                     key={proj.id}
-                    className="rounded-2xl bg-[#121216] border border-white/5 hover:border-violet-500/30 transition-all duration-300 overflow-hidden flex flex-col group shadow-lg shadow-black/40"
+                    className="rounded-xl bg-[#111317] border border-white/[0.08] hover:border-white/[0.16] transition-all duration-200 overflow-hidden flex flex-col group shadow-carbon-card"
                   >
                     {/* Thumbnail / Media Header */}
-                    <div className="h-44 bg-zinc-900 relative flex items-center justify-center overflow-hidden border-b border-white/5">
+                    <div className="h-44 bg-[#0A0B0D] relative flex items-center justify-center overflow-hidden border-b border-white/[0.08]">
                       {hasMedia ? (
                         <img
                           src={getThumbnailUrl(proj.id)}
                           alt={proj.title}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                          className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-300"
                           onError={(e) => {
-                            // Hide image if failed to load
                             (e.target as HTMLImageElement).style.display = "none";
                           }}
                         />
                       ) : (
-                        <Film className="w-10 h-10 text-zinc-700 group-hover:text-violet-500/50 transition-colors" />
+                        <Film className="w-8 h-8 text-slate-600 group-hover:text-sky-400/70 transition-colors" strokeWidth={1.5} />
                       )}
 
-                      <div className="absolute inset-0 bg-gradient-to-t from-[#121216] via-transparent to-black/30 z-10" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-[#111317] via-transparent to-black/40 z-10" />
 
                       {/* Status Badge */}
                       <div className="absolute top-3 left-3 z-20">
-                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold tracking-wider uppercase backdrop-blur-md border ${
-                          proj.status === "ready"
-                            ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/30"
-                            : "bg-black/60 text-zinc-300 border-white/10"
+                        <span className={`px-2 py-0.5 rounded-md text-[10px] font-mono tracking-wider uppercase backdrop-blur-md border ${
+                          proj.status === "ready" || proj.status === "discovered"
+                            ? "bg-emerald-500/10 text-emerald-300 border-emerald-500/30"
+                            : "bg-[#16191F]/90 text-slate-300 border-white/[0.10]"
                         }`}>
                           {proj.status}
                         </span>
@@ -394,20 +393,20 @@ export default function Dashboard() {
                       {/* Resolution & Duration Pill */}
                       {hasMedia && (
                         <div className="absolute bottom-3 left-3 z-20 flex items-center gap-1.5">
-                          <span className="px-2 py-0.5 rounded-md text-[10px] font-mono bg-black/70 backdrop-blur-md text-zinc-200 border border-white/10">
+                          <span className="px-2 py-0.5 rounded-md text-[10px] font-mono bg-black/80 backdrop-blur-md text-slate-200 border border-white/10">
                             {formatDuration(proj.duration)}
                           </span>
-                          <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-violet-950/80 backdrop-blur-md text-violet-300 border border-violet-500/30">
-                            {proj.height}p
+                          <span className="px-2 py-0.5 rounded-md text-[10px] font-mono font-medium bg-[#16191F]/90 backdrop-blur-md text-sky-300 border border-sky-400/30">
+                            {proj.height || 1080}p
                           </span>
                         </div>
                       )}
 
-                      {/* Action buttons */}
+                      {/* Delete button */}
                       <div className="absolute top-3 right-3 z-20 flex items-center gap-1.5">
                         <button
                           onClick={() => handleDeleteProject(proj.id)}
-                          className="p-1.5 rounded-lg bg-black/60 hover:bg-rose-500/20 text-zinc-400 hover:text-rose-400 transition-colors"
+                          className="p-1.5 rounded-lg bg-black/60 hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 transition-colors"
                           title="Delete project"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -418,25 +417,25 @@ export default function Dashboard() {
                     {/* Card Content */}
                     <Link
                       href={`/projects/${proj.id}`}
-                      className="p-5 flex-1 flex flex-col justify-between cursor-pointer group-hover:bg-white/[0.02] transition-colors"
+                      className="p-5 flex-1 flex flex-col justify-between cursor-pointer group-hover:bg-white/[0.01] transition-colors"
                     >
                       <div>
-                        <h3 className="font-semibold text-sm text-zinc-100 group-hover:text-violet-400 transition-colors line-clamp-1 mb-1">
+                        <h3 className="font-semibold text-sm text-slate-100 group-hover:text-sky-300 transition-colors line-clamp-1 mb-1.5">
                           {proj.title}
                         </h3>
                         {proj.instructions && (
-                          <p className="text-xs text-zinc-400 line-clamp-2 mb-3">
+                          <p className="text-xs text-slate-400 line-clamp-2 mb-3 leading-relaxed">
                             {proj.instructions}
                           </p>
                         )}
                       </div>
 
-                      <div className="pt-3 border-t border-white/5 flex items-center justify-between text-xs text-zinc-500">
+                      <div className="pt-3 border-t border-white/[0.06] flex items-center justify-between text-[11px] text-slate-500 font-mono">
                         <div className="flex items-center gap-1.5">
                           <Clock className="w-3.5 h-3.5" />
                           <span>{new Date(proj.created_at).toLocaleDateString()}</span>
                         </div>
-                        <div className="flex items-center gap-1 text-violet-400 font-medium">
+                        <div className="flex items-center gap-1 text-sky-400 font-medium">
                           <span>{proj.clips_count || 0} clips</span>
                           <ArrowRight className="w-3.5 h-3.5 ml-0.5" />
                         </div>
@@ -452,38 +451,38 @@ export default function Dashboard() {
 
       {/* New Project & Video Upload Modal */}
       {modalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-          <div className="w-full max-w-xl rounded-2xl bg-[#141419] border border-white/10 shadow-2xl p-6 relative">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-sm animate-fade-in">
+          <div className="w-full max-w-xl rounded-xl bg-[#111317] border border-white/[0.12] shadow-2xl p-6 relative">
             <button
               onClick={() => {
                 if (!uploading) setModalOpen(false);
               }}
               disabled={uploading}
-              className="absolute top-4 right-4 text-zinc-400 hover:text-white p-1 rounded-lg transition-colors disabled:opacity-30"
+              className="absolute top-4 right-4 text-slate-400 hover:text-white p-1 rounded-lg transition-colors disabled:opacity-30"
             >
               <X className="w-5 h-5" />
             </button>
 
             <div className="flex items-center gap-3 mb-5">
-              <div className="w-10 h-10 rounded-xl bg-violet-600/20 border border-violet-500/30 flex items-center justify-center text-violet-400">
-                <Video className="w-5 h-5" />
+              <div className="w-9 h-9 rounded-lg bg-sky-400/10 border border-sky-400/30 flex items-center justify-center text-sky-400">
+                <Video className="w-4 h-4" strokeWidth={1.75} />
               </div>
               <div>
                 <h3 className="text-base font-bold text-white">Create New Project</h3>
-                <p className="text-xs text-zinc-400">Upload a video and set natural language clipping instructions</p>
+                <p className="text-xs text-slate-400">Import source video and specify natural language clipping targets</p>
               </div>
             </div>
 
             <form onSubmit={handleCreateAndUpload} className="space-y-4">
               {/* Source Mode Switcher: Upload File vs YouTube Link */}
-              <div className="grid grid-cols-2 gap-2 p-1 bg-zinc-900 border border-white/10 rounded-xl">
+              <div className="grid grid-cols-2 gap-2 p-1 bg-[#16191F] border border-white/[0.08] rounded-lg">
                 <button
                   type="button"
                   onClick={() => setSourceMode("file")}
-                  className={`py-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-2 transition-all ${
+                  className={`py-2 rounded-md text-xs font-semibold flex items-center justify-center gap-2 transition-all ${
                     sourceMode === "file"
-                      ? "bg-violet-600 text-white shadow-md shadow-violet-600/20"
-                      : "text-zinc-400 hover:text-white"
+                      ? "bg-sky-400 text-slate-950 shadow-sm"
+                      : "text-slate-400 hover:text-white"
                   }`}
                 >
                   <UploadCloud className="w-4 h-4" />
@@ -492,10 +491,10 @@ export default function Dashboard() {
                 <button
                   type="button"
                   onClick={() => setSourceMode("youtube")}
-                  className={`py-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-2 transition-all ${
+                  className={`py-2 rounded-md text-xs font-semibold flex items-center justify-center gap-2 transition-all ${
                     sourceMode === "youtube"
-                      ? "bg-red-600 text-white shadow-md shadow-red-600/20"
-                      : "text-zinc-400 hover:text-white"
+                      ? "bg-rose-500 text-white shadow-sm"
+                      : "text-slate-400 hover:text-white"
                   }`}
                 >
                   <Youtube className="w-4 h-4 text-white" />
@@ -505,7 +504,7 @@ export default function Dashboard() {
 
               {sourceMode === "youtube" ? (
                 <div>
-                  <label className="block text-xs font-medium text-zinc-300 mb-1.5">
+                  <label className="block text-xs font-medium text-slate-300 mb-1.5">
                     YouTube Video URL *
                   </label>
                   <div className="relative">
@@ -515,18 +514,18 @@ export default function Dashboard() {
                       value={youtubeUrl}
                       onChange={(e) => setYoutubeUrl(e.target.value)}
                       required={sourceMode === "youtube"}
-                      className="w-full pl-10 pr-3.5 py-3 rounded-xl bg-zinc-900 border border-white/10 text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-red-500 transition-colors"
+                      className="w-full pl-10 pr-3.5 py-2.5 rounded-lg bg-[#16191F] border border-white/[0.10] text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-sky-400 transition-colors"
                     />
-                    <Youtube className="w-5 h-5 text-red-500 absolute left-3 top-3.5" />
+                    <Youtube className="w-4 h-4 text-rose-500 absolute left-3.5 top-3" />
                   </div>
-                  <p className="text-[11px] text-zinc-500 mt-1.5">
-                    ClipForge uses local <code className="text-zinc-400">yt-dlp</code> to pull up to 1080p MP4 directly to your PC.
+                  <p className="text-[11px] text-slate-500 mt-1.5">
+                    Downloaded directly via local <code className="text-slate-400 font-mono">yt-dlp</code> up to 1080p MP4.
                   </p>
                 </div>
               ) : (
                 /* Drag and Drop Upload Zone */
                 <div>
-                  <label className="block text-xs font-medium text-zinc-300 mb-1.5">
+                  <label className="block text-xs font-medium text-slate-300 mb-1.5">
                     Source Video *
                   </label>
                   <div
@@ -537,12 +536,12 @@ export default function Dashboard() {
                     onDragLeave={() => setDragOver(false)}
                     onDrop={handleFileDrop}
                     onClick={() => fileInputRef.current?.click()}
-                    className={`border-2 border-dashed rounded-xl p-6 flex flex-col items-center justify-center cursor-pointer transition-all ${
+                    className={`border border-dashed rounded-lg p-6 flex flex-col items-center justify-center cursor-pointer transition-all ${
                       dragOver
-                        ? "border-violet-500 bg-violet-500/10"
+                        ? "border-sky-400 bg-sky-400/10"
                         : selectedFile
                         ? "border-emerald-500/40 bg-emerald-500/5"
-                        : "border-white/10 hover:border-white/20 bg-zinc-900/50"
+                        : "border-white/[0.12] hover:border-white/[0.24] bg-[#16191F]/40"
                     }`}
                   >
                     <input
@@ -557,22 +556,22 @@ export default function Dashboard() {
                       <div className="flex items-center gap-3 text-emerald-400">
                         <FileVideo className="w-8 h-8 flex-shrink-0" />
                         <div className="text-left overflow-hidden">
-                          <p className="text-xs font-semibold text-zinc-200 truncate max-w-[280px]">
+                          <p className="text-xs font-semibold text-slate-200 truncate max-w-[280px]">
                             {selectedFile.name}
                           </p>
-                          <p className="text-[11px] text-zinc-400">
-                            {(selectedFile.size / (1024 * 1024)).toFixed(1)} MB · Ready to upload
+                          <p className="text-[11px] text-slate-400 font-mono">
+                            {(selectedFile.size / (1024 * 1024)).toFixed(1)} MB · Ready to ingest
                           </p>
                         </div>
                       </div>
                     ) : (
                       <>
-                        <UploadCloud className="w-8 h-8 text-zinc-500 mb-2" />
-                        <p className="text-xs font-medium text-zinc-200 text-center">
-                          Drag and drop your video file here, or <span className="text-violet-400">browse</span>
+                        <UploadCloud className="w-7 h-7 text-slate-500 mb-2" strokeWidth={1.5} />
+                        <p className="text-xs font-medium text-slate-200 text-center">
+                          Drag and drop video here, or <span className="text-sky-400 font-semibold">browse files</span>
                         </p>
-                        <p className="text-[10px] text-zinc-500 mt-1">
-                          MP4, MOV, WebM, MKV supported · Stays 100% on your PC
+                        <p className="text-[10px] text-slate-500 mt-1">
+                          MP4, MOV, WebM, MKV · Stays 100% on your local disk
                         </p>
                       </>
                     )}
@@ -581,42 +580,42 @@ export default function Dashboard() {
               )}
 
               <div>
-                <label className="block text-xs font-medium text-zinc-300 mb-1.5">
+                <label className="block text-xs font-medium text-slate-300 mb-1.5">
                   Project Title *
                 </label>
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Lex Fridman AI Debate"
+                  placeholder="e.g. Sam Altman AI Interview"
                   value={newTitle}
                   onChange={(e) => setNewTitle(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-zinc-900 border border-white/10 text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-violet-500 transition-colors"
+                  className="w-full px-3.5 py-2.5 rounded-lg bg-[#16191F] border border-white/[0.10] text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-sky-400 transition-colors"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-zinc-300 mb-1.5">
+                <label className="block text-xs font-medium text-slate-300 mb-1.5">
                   Natural Language AI Instructions
                 </label>
                 <textarea
                   rows={2}
                   value={newInstructions}
                   onChange={(e) => setNewInstructions(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-zinc-900 border border-white/10 text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-violet-500 transition-colors"
+                  className="w-full px-3.5 py-2.5 rounded-lg bg-[#16191F] border border-white/[0.10] text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-sky-400 transition-colors"
                   placeholder="Describe the moments you want discovered..."
                 />
               </div>
 
               {/* Upload Progress Bar if Uploading */}
               {uploading && (
-                <div className="p-3.5 rounded-xl bg-violet-950/30 border border-violet-500/20">
+                <div className="p-3.5 rounded-lg bg-sky-950/30 border border-sky-400/20">
                   <div className="flex items-center justify-between text-xs mb-1.5">
-                    <span className="text-violet-300 font-medium">{uploadStage}</span>
-                    <span className="text-zinc-400 font-mono">{uploadPercent}%</span>
+                    <span className="text-sky-300 font-medium">{uploadStage}</span>
+                    <span className="text-slate-400 font-mono">{uploadPercent}%</span>
                   </div>
-                  <div className="w-full h-2 bg-zinc-800 rounded-full overflow-hidden">
+                  <div className="w-full h-1.5 bg-[#16191F] rounded-full overflow-hidden">
                     <div
-                      className="h-full bg-violet-500 transition-all duration-300"
+                      className="h-full bg-sky-400 transition-all duration-300"
                       style={{ width: `${uploadPercent}%` }}
                     />
                   </div>
@@ -628,16 +627,16 @@ export default function Dashboard() {
                   type="button"
                   disabled={uploading}
                   onClick={() => setModalOpen(false)}
-                  className="px-4 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-medium transition-colors disabled:opacity-40"
+                  className="px-3.5 py-2 rounded-lg bg-[#16191F] hover:bg-[#1E222A] text-slate-300 text-xs font-medium transition-colors disabled:opacity-40 border border-white/[0.08]"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={uploading || !newTitle.trim()}
-                  className="px-5 py-2 rounded-lg bg-violet-600 hover:bg-violet-500 disabled:opacity-50 text-white text-xs font-semibold shadow-md shadow-violet-600/20 transition-all"
+                  className="px-4 py-2 rounded-lg bg-sky-400 hover:bg-sky-300 disabled:opacity-50 text-slate-950 text-xs font-semibold shadow-sm transition-all"
                 >
-                  {uploading ? "Processing Media..." : "Create & Ingest Video"}
+                  {uploading ? "Ingesting Video..." : "Create & Ingest Video"}
                 </button>
               </div>
             </form>
