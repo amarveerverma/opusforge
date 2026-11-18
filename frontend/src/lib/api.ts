@@ -213,6 +213,19 @@ export function uploadVideoWithProgress(
   });
 }
 
+export async function importYouTubeVideo(projectId: string, url: string): Promise<Project> {
+  const res = await fetch(`${API_BASE}/projects/${projectId}/youtube`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ url }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || "Failed to download YouTube video");
+  }
+  return res.json();
+}
+
 export async function runTranscription(projectId: string): Promise<any> {
   const res = await fetch(`${API_BASE}/projects/${projectId}/transcript`, {
     method: "POST",

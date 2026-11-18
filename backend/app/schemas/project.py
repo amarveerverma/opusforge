@@ -6,6 +6,9 @@ class ProjectCreate(BaseModel):
     title: str = Field(..., min_length=1, max_length=200)
     instructions: Optional[str] = Field(None, max_length=2000)
 
+class YouTubeImportRequest(BaseModel):
+    url: str = Field(..., description="YouTube video URL")
+
 class ProjectUpdate(BaseModel):
     title: Optional[str] = Field(None, min_length=1, max_length=200)
     instructions: Optional[str] = Field(None, max_length=2000)

@@ -21,6 +21,8 @@ import {
   UploadCloud,
   FileVideo,
   ArrowRight,
+  Youtube,
+  Link2,
 } from "lucide-react";
 import {
   fetchHealth,
@@ -29,6 +31,7 @@ import {
   createProject,
   deleteProject,
   uploadVideoWithProgress,
+  importYouTubeVideo,
   getThumbnailUrl,
   Project,
   SystemStatus,
@@ -42,6 +45,8 @@ export default function Dashboard() {
   const [modalOpen, setModalOpen] = useState<boolean>(false);
   
   // New Project Form & Upload State
+  const [sourceMode, setSourceMode] = useState<"file" | "youtube">("file");
+  const [youtubeUrl, setYoutubeUrl] = useState<string>("");
   const [newTitle, setNewTitle] = useState<string>("");
   const [newInstructions, setNewInstructions] = useState<string>(
     "Find the 5 most engaging educational moments, create 30–60 second clips, use dynamic captions and focus on the active speaker."
@@ -109,8 +114,13 @@ export default function Dashboard() {
       // 1. Create project record
       const created = await createProject(newTitle.trim(), newInstructions.trim());
 
-      // 2. Upload video file if provided
-      if (selectedFile) {
+      // 2. Ingest video file or YouTube URL
+      if (sourceMode === "youtube" && youtubeUrl.trim()) {
+        setUploadStage("Downloading YouTube video via local yt-dlp...");
+        setUploadPercent(50);
+        const updated = await importYouTubeVideo(created.id, youtubeUrl.trim());
+        setProjects([updated, ...projects.filter((p) => p.id !== updated.id)]);
+      } else if (selectedFile) {
         setUploadStage("Uploading media to local storage...");
         const updated = await uploadVideoWithProgress(
           created.id,
@@ -130,6 +140,7 @@ export default function Dashboard() {
       // Reset modal state
       setNewTitle("");
       setSelectedFile(null);
+      setYoutubeUrl("");
       setUploadPercent(0);
       setUploadStage("");
       setModalOpen(false);
@@ -464,60 +475,110 @@ export default function Dashboard() {
             </div>
 
             <form onSubmit={handleCreateAndUpload} className="space-y-4">
-              {/* Drag and Drop Upload Zone */}
-              <div>
-                <label className="block text-xs font-medium text-zinc-300 mb-1.5">
-                  Source Video *
-                </label>
-                <div
-                  onDragOver={(e) => {
-                    e.preventDefault();
-                    setDragOver(true);
-                  }}
-                  onDragLeave={() => setDragOver(false)}
-                  onDrop={handleFileDrop}
-                  onClick={() => fileInputRef.current?.click()}
-                  className={`border-2 border-dashed rounded-xl p-6 flex flex-col items-center justify-center cursor-pointer transition-all ${
-                    dragOver
-                      ? "border-violet-500 bg-violet-500/10"
-                      : selectedFile
-                      ? "border-emerald-500/40 bg-emerald-500/5"
-                      : "border-white/10 hover:border-white/20 bg-zinc-900/50"
+              {/* Source Mode Switcher: Upload File vs YouTube Link */}
+              <div className="grid grid-cols-2 gap-2 p-1 bg-zinc-900 border border-white/10 rounded-xl">
+                <button
+                  type="button"
+                  onClick={() => setSourceMode("file")}
+                  className={`py-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-2 transition-all ${
+                    sourceMode === "file"
+                      ? "bg-violet-600 text-white shadow-md shadow-violet-600/20"
+                      : "text-zinc-400 hover:text-white"
                   }`}
                 >
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="video/mp4,video/quicktime,video/webm,video/x-matroska"
-                    onChange={handleFileSelect}
-                    className="hidden"
-                  />
-
-                  {selectedFile ? (
-                    <div className="flex items-center gap-3 text-emerald-400">
-                      <FileVideo className="w-8 h-8 flex-shrink-0" />
-                      <div className="text-left overflow-hidden">
-                        <p className="text-xs font-semibold text-zinc-200 truncate max-w-[280px]">
-                          {selectedFile.name}
-                        </p>
-                        <p className="text-[11px] text-zinc-400">
-                          {(selectedFile.size / (1024 * 1024)).toFixed(1)} MB · Ready to upload
-                        </p>
-                      </div>
-                    </div>
-                  ) : (
-                    <>
-                      <UploadCloud className="w-8 h-8 text-zinc-500 mb-2" />
-                      <p className="text-xs font-medium text-zinc-200 text-center">
-                        Drag and drop your video file here, or <span className="text-violet-400">browse</span>
-                      </p>
-                      <p className="text-[10px] text-zinc-500 mt-1">
-                        MP4, MOV, WebM, MKV supported · Stays 100% on your PC
-                      </p>
-                    </>
-                  )}
-                </div>
+                  <UploadCloud className="w-4 h-4" />
+                  Upload Local File
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSourceMode("youtube")}
+                  className={`py-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-2 transition-all ${
+                    sourceMode === "youtube"
+                      ? "bg-red-600 text-white shadow-md shadow-red-600/20"
+                      : "text-zinc-400 hover:text-white"
+                  }`}
+                >
+                  <Youtube className="w-4 h-4 text-white" />
+                  YouTube Link
+                </button>
               </div>
+
+              {sourceMode === "youtube" ? (
+                <div>
+                  <label className="block text-xs font-medium text-zinc-300 mb-1.5">
+                    YouTube Video URL *
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="url"
+                      placeholder="https://www.youtube.com/watch?v=..."
+                      value={youtubeUrl}
+                      onChange={(e) => setYoutubeUrl(e.target.value)}
+                      required={sourceMode === "youtube"}
+                      className="w-full pl-10 pr-3.5 py-3 rounded-xl bg-zinc-900 border border-white/10 text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-red-500 transition-colors"
+                    />
+                    <Youtube className="w-5 h-5 text-red-500 absolute left-3 top-3.5" />
+                  </div>
+                  <p className="text-[11px] text-zinc-500 mt-1.5">
+                    ClipForge uses local <code className="text-zinc-400">yt-dlp</code> to pull up to 1080p MP4 directly to your PC.
+                  </p>
+                </div>
+              ) : (
+                /* Drag and Drop Upload Zone */
+                <div>
+                  <label className="block text-xs font-medium text-zinc-300 mb-1.5">
+                    Source Video *
+                  </label>
+                  <div
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      setDragOver(true);
+                    }}
+                    onDragLeave={() => setDragOver(false)}
+                    onDrop={handleFileDrop}
+                    onClick={() => fileInputRef.current?.click()}
+                    className={`border-2 border-dashed rounded-xl p-6 flex flex-col items-center justify-center cursor-pointer transition-all ${
+                      dragOver
+                        ? "border-violet-500 bg-violet-500/10"
+                        : selectedFile
+                        ? "border-emerald-500/40 bg-emerald-500/5"
+                        : "border-white/10 hover:border-white/20 bg-zinc-900/50"
+                    }`}
+                  >
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="video/mp4,video/quicktime,video/webm,video/x-matroska"
+                      onChange={handleFileSelect}
+                      className="hidden"
+                    />
+
+                    {selectedFile ? (
+                      <div className="flex items-center gap-3 text-emerald-400">
+                        <FileVideo className="w-8 h-8 flex-shrink-0" />
+                        <div className="text-left overflow-hidden">
+                          <p className="text-xs font-semibold text-zinc-200 truncate max-w-[280px]">
+                            {selectedFile.name}
+                          </p>
+                          <p className="text-[11px] text-zinc-400">
+                            {(selectedFile.size / (1024 * 1024)).toFixed(1)} MB · Ready to upload
+                          </p>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <UploadCloud className="w-8 h-8 text-zinc-500 mb-2" />
+                        <p className="text-xs font-medium text-zinc-200 text-center">
+                          Drag and drop your video file here, or <span className="text-violet-400">browse</span>
+                        </p>
+                        <p className="text-[10px] text-zinc-500 mt-1">
+                          MP4, MOV, WebM, MKV supported · Stays 100% on your PC
+                        </p>
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
 
               <div>
                 <label className="block text-xs font-medium text-zinc-300 mb-1.5">

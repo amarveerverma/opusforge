@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Optional, List
 from fastapi import APIRouter, HTTPException, UploadFile, File, Form, Request, status
 from fastapi.responses import FileResponse, StreamingResponse
-from ..schemas.project import ProjectCreate, ProjectResponse, ProjectListResponse
+from ..schemas.project import ProjectCreate, ProjectResponse, ProjectListResponse, YouTubeImportRequest
 from ..database import get_db
 from ..config import settings
 from ..core.ingestion import (
@@ -213,6 +213,84 @@ async def upload_video(project_id: str, file: UploadFile = File(...)):
             )
         )
         await db.commit()
+        
+    return await get_project(project_id)
+
+@router.post("/{project_id}/youtube", response_model=ProjectResponse)
+async def import_youtube_video(project_id: str, payload: YouTubeImportRequest):
+    """
+    Downloads a video directly from YouTube via yt-dlp into the project,
+    extracts metadata, generates thumbnails, and updates project status to ready.
+    """
+    async with get_db() as db:
+        cursor = await db.execute("SELECT * FROM projects WHERE id = ?", (project_id,))
+        project = await cursor.fetchone()
+        
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+        
+    url = payload.url.strip()
+    if not url:
+        raise HTTPException(status_code=400, detail="YouTube URL is required")
+        
+    import yt_dlp
+    
+    proj_dir = settings.PROJECTS_DIR / project_id
+    src_dir = proj_dir / "source"
+    src_dir.mkdir(parents=True, exist_ok=True)
+    
+    outtmpl = str(src_dir / "%(id)s_%(title).50s.%(ext)s")
+    ydl_opts = {
+        "format": "bestvideo[ext=mp4][height<=1080]+bestaudio[ext=m4a]/best[ext=mp4]/best",
+        "outtmpl": outtmpl,
+        "merge_output_format": "mp4",
+        "quiet": True,
+        "no_warnings": True,
+        "noplaylist": True,
+    }
+    
+    try:
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info_dict = ydl.extract_info(url, download=True)
+            downloaded_file = Path(ydl.prepare_filename(info_dict))
+            if not downloaded_file.exists():
+                mp4_file = downloaded_file.with_suffix(".mp4")
+                if mp4_file.exists():
+                    downloaded_file = mp4_file
+    except Exception as e:
+        logger.error("YouTube download error: %s", e)
+        raise HTTPException(status_code=400, detail=f"Failed to download YouTube video: {e}")
+        
+    # Extract metadata & generate thumbnails
+    try:
+        meta = validate_video_file(downloaded_file)
+        thumb_dir = proj_dir / "thumbnails"
+        thumb_paths = generate_thumbnails(downloaded_file, thumb_dir)
+        now = datetime.utcnow().isoformat()
+        
+        async with get_db() as db:
+            await db.execute(
+                """
+                UPDATE projects
+                SET original_filename = ?, source_file_path = ?, duration = ?, width = ?, height = ?, fps = ?, codec = ?, updated_at = ?, status = 'ready'
+                WHERE id = ?
+                """,
+                (
+                    downloaded_file.name,
+                    str(downloaded_file.resolve()),
+                    meta.duration,
+                    meta.width,
+                    meta.height,
+                    meta.fps,
+                    meta.video_codec,
+                    now,
+                    project_id,
+                )
+            )
+            await db.commit()
+    except Exception as e:
+        logger.error("Metadata extraction failed after YouTube download: %s", e)
+        raise HTTPException(status_code=500, detail=f"Failed to process video: {e}")
         
     return await get_project(project_id)
 
