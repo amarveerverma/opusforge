@@ -1,8 +1,8 @@
 import json
 from pathlib import Path
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Header
 from typing import List, Optional, Dict, Any
-from ..schemas.clip import ClipResponse, ClipUpdate, FramingUpdateRequest
+from ..schemas.clip import ClipResponse, ClipUpdate, FramingUpdateRequest, DiscoverClipsRequest
 from ..database import get_db
 from ..config import settings
 from ..core.clip_discovery import discover_clips_from_analysis, CandidateClip
@@ -11,10 +11,17 @@ from ..core.reframer import CropConfig, calculate_clip_framing
 router = APIRouter(tags=["Clips"])
 
 @router.post("/projects/{project_id}/discover", response_model=List[ClipResponse])
-async def discover_project_clips(project_id: str):
+async def discover_project_clips(
+    project_id: str,
+    payload: Optional[DiscoverClipsRequest] = None,
+    x_omniroute_key: Optional[str] = Header(None),
+    x_omniroute_url: Optional[str] = Header(None),
+    x_omniroute_model: Optional[str] = Header(None),
+):
     """
     Executes AI clip discovery by fusing transcripts, scene cuts, face presence,
     and user instructions into ranked, non-overlapping candidate moments.
+    Supports OmniRoute BYOK via payload or headers.
     """
     async with get_db() as db:
         cursor = await db.execute("SELECT * FROM projects WHERE id = ?", (project_id,))
@@ -39,6 +46,10 @@ async def discover_project_clips(project_id: str):
     source_w = proj["width"] if proj["width"] and proj["width"] > 0 else 1920
     source_h = proj["height"] if proj["height"] and proj["height"] > 0 else 1080
     
+    omni_key = (payload.omniroute_api_key if payload and payload.omniroute_api_key else x_omniroute_key)
+    omni_url = (payload.omniroute_base_url if payload and payload.omniroute_base_url else x_omniroute_url)
+    omni_mod = (payload.omniroute_model if payload and payload.omniroute_model else x_omniroute_model)
+
     candidates = discover_clips_from_analysis(
         project_id=project_id,
         transcript_data=transcript_data,
@@ -47,6 +58,9 @@ async def discover_project_clips(project_id: str):
         instructions=proj["instructions"],
         source_width=source_w,
         source_height=source_h,
+        omniroute_key=omni_key,
+        omniroute_base_url=omni_url,
+        omniroute_model=omni_mod,
     )
     
     # Save candidate clips to candidates.json

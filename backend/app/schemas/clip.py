@@ -12,6 +12,11 @@ class FramingUpdateRequest(BaseModel):
     mode: Optional[str] = Field(None, description="smart_track | center | blur_background | split_screen | manual")
     manual_x_offset: Optional[float] = Field(None, description="Normalized 0.0 to 1.0 focal center")
 
+class DiscoverClipsRequest(BaseModel):
+    omniroute_api_key: Optional[str] = None
+    omniroute_base_url: Optional[str] = None
+    omniroute_model: Optional[str] = None
+
 class ClipResponse(BaseModel):
     id: str
     project_id: str

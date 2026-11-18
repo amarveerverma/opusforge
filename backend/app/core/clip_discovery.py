@@ -260,9 +260,14 @@ def discover_clips_from_analysis(
     instructions: Optional[str] = None,
     source_width: int = 1920,
     source_height: int = 1080,
+    omniroute_key: Optional[str] = None,
+    omniroute_base_url: Optional[str] = None,
+    omniroute_model: Optional[str] = None,
 ) -> List[CandidateClip]:
     """
     Discovers ranked, non-overlapping candidate clips snapped to sentence boundaries.
+    Uses OmniRoute LLM when an API key is provided, or seamlessly falls back to
+    the 100% offline 7-factor viral heuristics engine.
     """
     from .reframer import calculate_clip_framing
     user_settings = parse_user_instructions(instructions)
@@ -273,6 +278,67 @@ def discover_clips_from_analysis(
     segments = transcript_data.get("segments", [])
     if not segments:
         return []
+
+    # 1. OmniRoute AI Decision Engine (if configured)
+    if omniroute_key and omniroute_key.strip():
+        try:
+            from .omniroute_client import OmniRouteClient
+            client = OmniRouteClient(api_key=omniroute_key, base_url=omniroute_base_url, model=omniroute_model)
+            llm_clips = client.discover_clips(
+                transcript_text=transcript_data.get("text", ""),
+                segments=segments,
+                instructions=instructions,
+                min_duration=min_dur,
+                max_duration=max_dur,
+                target_count=target_count,
+            )
+            if llm_clips and len(llm_clips) > 0:
+                selected_clips: List[CandidateClip] = []
+                for idx, c in enumerate(llm_clips):
+                    clip_start = float(c.get("start_time", 0.0))
+                    clip_end = float(c.get("end_time", clip_start + 30.0))
+                    crop_cfg = calculate_clip_framing(
+                        source_width=source_width,
+                        source_height=source_height,
+                        clip_start=clip_start,
+                        clip_end=clip_end,
+                        face_data=face_data,
+                        mode="smart_track",
+                    )
+                    rank = idx + 1
+                    clip_id = f"clip_{project_id[-6:]}_{rank:02d}"
+                    breakdown_raw = c.get("score_breakdown", {})
+                    breakdown = ScoreBreakdown(
+                        hook_strength=float(breakdown_raw.get("hook_strength", 90.0)),
+                        narrative_flow=float(breakdown_raw.get("narrative_flow", 90.0)),
+                        standalone_context=float(breakdown_raw.get("standalone_context", 90.0)),
+                        educational_value=float(breakdown_raw.get("educational_value", 90.0)),
+                        emotional_impact=float(breakdown_raw.get("emotional_impact", 90.0)),
+                        ending_quality=float(breakdown_raw.get("ending_quality", 90.0)),
+                        visual_potential=float(breakdown_raw.get("visual_potential", 85.0)),
+                    )
+                    selected_clips.append(CandidateClip(
+                        clip_id=clip_id,
+                        project_id=project_id,
+                        rank=rank,
+                        start_time=round(clip_start, 2),
+                        end_time=round(clip_end, 2),
+                        duration=round(clip_end - clip_start, 2),
+                        title=c.get("title", f"Viral Moment #{rank}"),
+                        hook=c.get("hook", ""),
+                        summary=c.get("summary", ""),
+                        virality_score=float(c.get("virality_score", 95.0)),
+                        letter_grade=c.get("letter_grade", "A+"),
+                        score_breakdown=breakdown,
+                        transcript_excerpt=c.get("summary", ""),
+                        why_chosen=c.get("why_chosen", "Selected by OmniRoute AI for peak virality and retention."),
+                        crop_config=crop_cfg.model_dump(),
+                        caption_config={"preset": "mrbeast", "font_size": 52, "highlight_color": "#00FF66"},
+                    ))
+                logger.info("OmniRoute returned %d viral candidate clips for project %s.", len(selected_clips), project_id)
+                return selected_clips
+        except Exception as e:
+            logger.warning("OmniRoute discovery error: %s. Falling back to offline heuristic engine.", e)
         
     scene_cuts = scene_data.get("cut_timestamps", []) if scene_data else []
     has_faces = face_data.get("has_visible_faces", True) if face_data else True

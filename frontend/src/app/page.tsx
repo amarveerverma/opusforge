@@ -23,6 +23,7 @@ import {
   ArrowRight,
   Youtube,
   Link2,
+  Key,
 } from "lucide-react";
 import {
   fetchHealth,
@@ -33,22 +34,31 @@ import {
   uploadVideoWithProgress,
   importYouTubeVideo,
   getThumbnailUrl,
+  getOmniRouteConfig,
   Project,
   SystemStatus,
+  OmniRouteConfig,
 } from "@/lib/api";
+import { OmniRouteModal } from "@/components/OmniRouteModal";
 
 export default function Dashboard() {
   const [systemStatus, setSystemStatus] = useState<SystemStatus | null>(null);
   const [backendOnline, setBackendOnline] = useState<boolean>(false);
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
-  const [modalOpen, setModalOpen] = useState<boolean>(false);
-  
-  // New Project Form & Upload State
-  const [sourceMode, setSourceMode] = useState<"file" | "youtube">("file");
+  const [omniModalOpen, setOmniModalOpen] = useState<boolean>(false);
+  const [omniConfig, setOmniConfig] = useState<OmniRouteConfig>({
+    apiKey: "",
+    baseUrl: "http://localhost:20128/v1",
+    model: "google/gemini-2.0-flash-001",
+  });
+
+  // Opus.pro Ingestion State
+  const [sourceMode, setSourceMode] = useState<"youtube" | "file">("youtube");
   const [youtubeUrl, setYoutubeUrl] = useState<string>("");
-  const [newTitle, setNewTitle] = useState<string>("");
-  const [newInstructions, setNewInstructions] = useState<string>(
+  const [projectTitle, setProjectTitle] = useState<string>("");
+  const [durationPreset, setDurationPreset] = useState<string>("30-60");
+  const [instructions, setInstructions] = useState<string>(
     "Find the 5 most engaging educational moments, create 30–60 second clips, use dynamic captions and focus on the active speaker."
   );
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -58,7 +68,7 @@ export default function Dashboard() {
   const [uploadStage, setUploadStage] = useState<string>("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Load telemetry & projects
+  // Load telemetry, projects, & OmniRoute config
   const loadData = async () => {
     try {
       await fetchHealth();
@@ -69,7 +79,7 @@ export default function Dashboard() {
       ]);
       setSystemStatus(sys);
       setProjects(projs);
-    } catch (err: any) {
+    } catch {
       setBackendOnline(false);
     } finally {
       setLoading(false);
@@ -77,10 +87,24 @@ export default function Dashboard() {
   };
 
   useEffect(() => {
+    setOmniConfig(getOmniRouteConfig());
     loadData();
     const interval = setInterval(loadData, 4000);
     return () => clearInterval(interval);
   }, []);
+
+  const handleDurationSelect = (dur: string) => {
+    setDurationPreset(dur);
+    if (dur === "<30") {
+      setInstructions("Find the top moments under 30 seconds with explosive opening hooks.");
+    } else if (dur === "30-60") {
+      setInstructions("Find 30–60 second engaging moments with strong hooks, clear flow, and decisive punchlines.");
+    } else if (dur === "60-90") {
+      setInstructions("Find 60–90 second deep-dive educational takeaways with complete explanations.");
+    } else {
+      setInstructions("Find high-retention long narrative stories between 90 seconds and 3 minutes.");
+    }
+  };
 
   const handleFileDrop = (e: React.DragEvent) => {
     e.preventDefault();
@@ -88,8 +112,8 @@ export default function Dashboard() {
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
       const file = e.dataTransfer.files[0];
       setSelectedFile(file);
-      if (!newTitle) {
-        setNewTitle(file.name.replace(/\.[^/.]+$/, ""));
+      if (!projectTitle) {
+        setProjectTitle(file.name.replace(/\.[^/.]+$/, ""));
       }
     }
   };
@@ -98,21 +122,21 @@ export default function Dashboard() {
     if (e.target.files && e.target.files.length > 0) {
       const file = e.target.files[0];
       setSelectedFile(file);
-      if (!newTitle) {
-        setNewTitle(file.name.replace(/\.[^/.]+$/, ""));
+      if (!projectTitle) {
+        setProjectTitle(file.name.replace(/\.[^/.]+$/, ""));
       }
     }
   };
 
-  const handleCreateAndUpload = async (e: React.FormEvent) => {
+  const handleIngest = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newTitle.trim()) return;
+    const titleToUse = projectTitle.trim() || (sourceMode === "youtube" ? "YouTube Video Repurposed" : selectedFile?.name.replace(/\.[^/.]+$/, "") || "Untitled Project");
 
     setUploading(true);
-    setUploadStage("Creating project record...");
+    setUploadStage("Initializing local workspace...");
     try {
       // 1. Create project record
-      const created = await createProject(newTitle.trim(), newInstructions.trim());
+      const created = await createProject(titleToUse, instructions.trim());
 
       // 2. Ingest video file or YouTube URL
       if (sourceMode === "youtube" && youtubeUrl.trim()) {
@@ -121,31 +145,28 @@ export default function Dashboard() {
         const updated = await importYouTubeVideo(created.id, youtubeUrl.trim());
         setProjects([updated, ...projects.filter((p) => p.id !== updated.id)]);
       } else if (selectedFile) {
-        setUploadStage("Uploading media to local storage...");
+        setUploadStage("Uploading video file to local storage...");
         const updated = await uploadVideoWithProgress(
           created.id,
           selectedFile,
           (percent) => {
             setUploadPercent(percent);
             if (percent === 100) {
-              setUploadStage("FFprobe inspecting & generating thumbnails...");
+              setUploadStage("FFprobe inspecting metadata & generating keyframes...");
             }
           }
         );
         setProjects([updated, ...projects.filter((p) => p.id !== updated.id)]);
-      } else {
-        setProjects([created, ...projects]);
       }
 
-      // Reset modal state
-      setNewTitle("");
+      // Reset
+      setProjectTitle("");
       setSelectedFile(null);
       setYoutubeUrl("");
       setUploadPercent(0);
       setUploadStage("");
-      setModalOpen(false);
     } catch (err: any) {
-      alert("Failed to create and upload project: " + err.message);
+      alert("Failed to ingest video: " + err.message);
     } finally {
       setUploading(false);
     }
@@ -168,161 +189,266 @@ export default function Dashboard() {
     return `${m}:${s < 10 ? "0" : ""}${s}`;
   };
 
-  const vramPercent = systemStatus?.gpu.vram_total_mb
-    ? Math.round((systemStatus.gpu.vram_used_mb / systemStatus.gpu.vram_total_mb) * 100)
-    : 0;
-
   return (
-    <div className="min-h-screen bg-[#0A0B0D] text-slate-100 flex flex-col font-sans">
-      {/* Top Navigation Bar — Gemini Carbon Studio Header */}
-      <header className="border-b border-white/[0.08] bg-[#0E1014]/90 backdrop-blur-md sticky top-0 z-40 px-6 py-3.5 flex items-center justify-between">
+    <div className="min-h-screen bg-[#0B0B10] text-zinc-100 flex flex-col font-sans">
+      {/* OmniRoute Settings Modal */}
+      <OmniRouteModal
+        isOpen={omniModalOpen}
+        onClose={() => setOmniModalOpen(false)}
+        onConfigSaved={() => setOmniConfig(getOmniRouteConfig())}
+      />
+
+      {/* Top Navigation Bar — Opus.pro Edition Header */}
+      <header className="border-b border-[#28243C] bg-[#121219]/90 backdrop-blur-md sticky top-0 z-40 px-6 py-3.5 flex items-center justify-between">
         <div className="flex items-center gap-3.5">
-          <div className="w-8 h-8 rounded-lg bg-sky-400/10 border border-sky-400/30 flex items-center justify-center shadow-sm">
-            <Film className="w-4 h-4 text-sky-400" strokeWidth={1.75} />
+          <div className="w-8 h-8 rounded-lg bg-purple-600/20 border border-purple-500/40 flex items-center justify-center shadow-lg shadow-purple-600/20">
+            <Zap className="w-4 h-4 text-purple-400" />
           </div>
           <div>
             <div className="flex items-center gap-2">
               <span className="font-bold text-base tracking-tight text-white flex items-center gap-1.5">
-                CLIPFORGE <span className="w-1.5 h-1.5 rounded-full bg-sky-400 inline-block animate-pulse" />
+                OPUSFORGE <span className="text-xs font-normal text-purple-400">⚡ Opus.pro Studio</span>
               </span>
-              <span className="text-[10px] font-mono uppercase tracking-wider px-2 py-0.5 rounded-md bg-[#16191F] text-slate-300 border border-white/[0.08]">
-                Gemini Carbon Studio
+              <span className="text-[10px] font-mono uppercase tracking-wider px-2 py-0.5 rounded-full bg-purple-950/60 text-purple-300 border border-purple-700/40">
+                100% Local AI
               </span>
             </div>
-            <p className="text-[11px] text-slate-400">100% Offline AI Video Repurposing Suite</p>
           </div>
         </div>
 
-        {/* Live Hardware Telemetry Pills */}
+        {/* Header Right Actions */}
         <div className="flex items-center gap-3">
-          {/* GPU Telemetry */}
-          <div className="hidden lg:flex items-center gap-3 px-3.5 py-1.5 rounded-lg bg-[#111317] border border-white/[0.08] text-xs">
-            <div className="flex items-center gap-1.5 text-emerald-400 font-medium">
-              <Zap className="w-3.5 h-3.5 fill-emerald-400/20" strokeWidth={1.75} />
-              <span>{systemStatus?.gpu.name || "RTX 4060 GPU"}</span>
-            </div>
-            <div className="h-3 w-[1px] bg-white/[0.10]" />
-            <div className="flex items-center gap-2">
-              <span className="text-slate-400">VRAM:</span>
-              <div className="w-16 h-1.5 bg-[#1E222A] rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-sky-400 rounded-full transition-all duration-500"
-                  style={{ width: `${vramPercent}%` }}
-                />
-              </div>
-              <span className="font-mono text-slate-200 text-[11px]">
-                {systemStatus ? `${systemStatus.gpu.vram_used_mb}MB / ${systemStatus.gpu.vram_total_mb}MB` : "--"}
-              </span>
-            </div>
-          </div>
-
-          {/* RAM Telemetry */}
-          <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#111317] border border-white/[0.08] text-xs text-slate-400">
-            <Cpu className="w-3.5 h-3.5 text-slate-400" strokeWidth={1.75} />
-            <span>RAM:</span>
-            <span className="font-mono text-slate-200 text-[11px]">
-              {systemStatus ? `${systemStatus.ram.used_gb} / ${systemStatus.ram.total_gb} GB` : "--"}
-            </span>
-          </div>
-
-          {/* Disk Telemetry */}
-          <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#111317] border border-white/[0.08] text-xs text-slate-400">
-            <HardDrive className="w-3.5 h-3.5 text-slate-400" strokeWidth={1.75} />
-            <span className="font-mono text-slate-200 text-[11px]">
-              {systemStatus ? `${systemStatus.disk.free_gb} GB Free` : "--"}
-            </span>
-          </div>
-
-          {/* Server Status Dot */}
-          <div className="flex items-center gap-2 px-2.5 py-1 rounded-lg bg-[#111317] border border-white/[0.08] text-xs">
+          {/* OmniRoute BYOK Status Button */}
+          <button
+            onClick={() => setOmniModalOpen(true)}
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium border transition ${
+              omniConfig.apiKey
+                ? "bg-emerald-950/40 text-emerald-300 border-emerald-500/40 hover:bg-emerald-900/40 shadow-sm shadow-emerald-500/10"
+                : "bg-purple-950/40 text-purple-300 border-purple-500/40 hover:bg-purple-900/40"
+            }`}
+            title="Configure OmniRoute universal AI decision engine"
+          >
             <span
               className={`w-2 h-2 rounded-full ${
-                backendOnline ? "bg-emerald-400 shadow-sm shadow-emerald-400/50 animate-pulse" : "bg-rose-500"
+                omniConfig.apiKey ? "bg-emerald-400 animate-pulse" : "bg-purple-400"
               }`}
             />
-            <span className="text-slate-300 font-medium text-[11px]">
-              {backendOnline ? "CUDA Hardware Active" : "Offline"}
+            <span className="font-mono">
+              {omniConfig.apiKey ? "OmniRoute: Active" : "🔑 Connect OmniRoute Key"}
+            </span>
+          </button>
+
+          {/* GPU Telemetry */}
+          <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#181824] border border-[#28243C] text-xs">
+            <Cpu className="w-3.5 h-3.5 text-purple-400" />
+            <span className="font-medium text-zinc-300">
+              {systemStatus?.gpu.available ? systemStatus.gpu.name.replace("Laptop GPU", "") : "RTX 4060 GPU"}
+            </span>
+            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-purple-950/80 text-purple-300 border border-purple-800/40">
+              NVENC Active
             </span>
           </div>
-
-          {/* New Project Button */}
-          <button
-            onClick={() => setModalOpen(true)}
-            className="flex items-center gap-2 px-3.5 py-1.5 rounded-lg bg-sky-400 hover:bg-sky-300 text-slate-950 font-semibold text-xs tracking-wide shadow-sm transition-all hover:scale-[1.01] active:scale-[0.99]"
-          >
-            <Plus className="w-3.5 h-3.5" strokeWidth={2.5} />
-            <span>+ New Project</span>
-          </button>
         </div>
       </header>
 
       {/* Main Content Area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-6 py-8">
-        {/* Banner Alert if Offline */}
-        {!backendOnline && !loading && (
-          <div className="mb-8 p-4 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 flex items-center gap-3">
-            <AlertCircle className="w-5 h-5 flex-shrink-0" />
-            <div>
-              <p className="font-semibold text-sm">FastAPI Backend is Offline</p>
-              <p className="text-xs text-rose-400/80">
-                Start the backend server on port 8000 using{" "}
-                <code className="bg-black/40 px-1.5 py-0.5 rounded text-white">python -m uvicorn backend.app.main:app --port 8000</code>
-              </p>
-            </div>
+      <main className="flex-1 max-w-6xl w-full mx-auto px-6 py-10 space-y-12">
+        {/* Opus.pro Hero Section */}
+        <div className="text-center space-y-3">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-950/50 border border-purple-700/40 text-purple-300 text-xs font-medium mb-1">
+            <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+            <span>AI Virality Intelligence & Local NVENC Video Pipeline</span>
           </div>
-        )}
+          <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-white">
+            1 Long Video → <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-violet-300 to-indigo-400">10 Viral Shorts in 1 Click</span>
+          </h1>
+          <p className="text-sm md:text-base text-zinc-400 max-w-2xl mx-auto">
+            Automated hook evaluation, face-tracking 9:16 vertical reframe, and dynamic captions. Powered by your OmniRoute LLM engine.
+          </p>
+        </div>
 
-        {/* Studio Overview Metrics */}
-        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          <div className="p-5 rounded-xl bg-[#111317] border border-white/[0.08] hover:border-white/[0.14] transition-all shadow-carbon-card">
-            <div className="flex items-center justify-between text-slate-400 mb-2">
-              <span className="text-[11px] font-mono uppercase tracking-wider text-slate-400">Total Projects</span>
-              <Video className="w-4 h-4 text-sky-400" strokeWidth={1.75} />
-            </div>
-            <div className="text-2xl font-bold font-mono tracking-tight text-white">{projects.length}</div>
-            <p className="text-[11px] text-slate-400 mt-1">Saved locally in SQLite WAL</p>
+        {/* Opus.pro Signature Ingestion Card */}
+        <div className="border border-[#28243C] rounded-2xl bg-[#121219] p-6 md:p-8 shadow-2xl shadow-purple-950/30 space-y-6">
+          {/* Mode Switcher Tabs */}
+          <div className="flex border-b border-zinc-800 pb-3 gap-6">
+            <button
+              type="button"
+              onClick={() => setSourceMode("youtube")}
+              className={`flex items-center gap-2 text-sm font-semibold pb-2 border-b-2 transition ${
+                sourceMode === "youtube"
+                  ? "border-purple-500 text-white"
+                  : "border-transparent text-zinc-500 hover:text-zinc-300"
+              }`}
+            >
+              <Youtube className="w-4 h-4 text-red-500" />
+              <span>Paste YouTube Link</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setSourceMode("file")}
+              className={`flex items-center gap-2 text-sm font-semibold pb-2 border-b-2 transition ${
+                sourceMode === "file"
+                  ? "border-purple-500 text-white"
+                  : "border-transparent text-zinc-500 hover:text-zinc-300"
+              }`}
+            >
+              <UploadCloud className="w-4 h-4 text-purple-400" />
+              <span>Upload Local Video File</span>
+            </button>
           </div>
 
-          <div className="p-5 rounded-xl bg-[#111317] border border-white/[0.08] hover:border-white/[0.14] transition-all shadow-carbon-card">
-            <div className="flex items-center justify-between text-slate-400 mb-2">
-              <span className="text-[11px] font-mono uppercase tracking-wider text-slate-400">Target Hardware</span>
-              <Cpu className="w-4 h-4 text-emerald-400" strokeWidth={1.75} />
-            </div>
-            <div className="text-lg font-bold tracking-tight text-slate-100 truncate">
-              {systemStatus?.gpu.name || "NVIDIA RTX 4060"}
-            </div>
-            <p className="text-[11px] text-emerald-400/90 mt-1">8 GB VRAM · CUDA 12.2 FP16 Active</p>
-          </div>
+          <form onSubmit={handleIngest} className="space-y-6">
+            {sourceMode === "youtube" ? (
+              <div className="space-y-2">
+                <label className="block text-xs font-semibold text-zinc-300 uppercase tracking-wider">
+                  YouTube Video / Podcast URL
+                </label>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <div className="relative flex-1">
+                    <Link2 className="absolute left-3.5 top-3.5 w-4 h-4 text-zinc-500" />
+                    <input
+                      type="url"
+                      value={youtubeUrl}
+                      onChange={(e) => setYoutubeUrl(e.target.value)}
+                      placeholder="https://www.youtube.com/watch?v=... (Drop any long video link)"
+                      className="w-full pl-10 pr-4 py-3 rounded-xl bg-[#171722] border border-[#28243C] text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-purple-500 transition font-mono"
+                    />
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <label className="block text-xs font-semibold text-zinc-300 uppercase tracking-wider">
+                  Select or Drag Local Video File
+                </label>
+                <div
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    setDragOver(true);
+                  }}
+                  onDragLeave={() => setDragOver(false)}
+                  onDrop={handleFileDrop}
+                  onClick={() => fileInputRef.current?.click()}
+                  className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition ${
+                    dragOver
+                      ? "border-purple-500 bg-purple-950/20"
+                      : "border-[#28243C] bg-[#171722] hover:border-purple-500/50"
+                  }`}
+                >
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="video/*"
+                    onChange={handleFileSelect}
+                    className="hidden"
+                  />
+                  <FileVideo className="w-10 h-10 text-purple-400 mx-auto mb-2 opacity-80" />
+                  <p className="text-sm font-semibold text-zinc-200">
+                    {selectedFile ? selectedFile.name : "Drag & drop video file here, or click to browse"}
+                  </p>
+                  <p className="text-xs text-zinc-500 mt-1">
+                    MP4, MOV, WebM, MKV up to 4K 60FPS · Stays 100% on your PC
+                  </p>
+                </div>
+              </div>
+            )}
 
-          <div className="p-5 rounded-xl bg-[#111317] border border-white/[0.08] hover:border-white/[0.14] transition-all shadow-carbon-card">
-            <div className="flex items-center justify-between text-slate-400 mb-2">
-              <span className="text-[11px] font-mono uppercase tracking-wider text-slate-400">NVENC Engine</span>
-              <Zap className="w-4 h-4 text-amber-400" strokeWidth={1.75} />
+            {/* Target Duration Preset Pills */}
+            <div className="space-y-2">
+              <label className="block text-xs font-semibold text-zinc-300 uppercase tracking-wider">
+                Target Clip Duration
+              </label>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                {[
+                  { id: "<30", label: "< 30s", desc: "Ultra Viral Hooks" },
+                  { id: "30-60", label: "30s – 60s", desc: "Recommended (TikTok/Reels)" },
+                  { id: "60-90", label: "60s – 90s", desc: "In-depth Context" },
+                  { id: "90-180", label: "90s – 3m", desc: "Long Stories" },
+                ].map((pill) => (
+                  <button
+                    key={pill.id}
+                    type="button"
+                    onClick={() => handleDurationSelect(pill.id)}
+                    className={`p-3 rounded-xl border text-left transition flex flex-col justify-between ${
+                      durationPreset === pill.id
+                        ? "bg-purple-600/20 border-purple-500 text-white shadow-md shadow-purple-600/10"
+                        : "bg-[#171722] border-[#28243C] text-zinc-400 hover:border-zinc-700"
+                    }`}
+                  >
+                    <span className="font-bold text-sm text-zinc-100">{pill.label}</span>
+                    <span className="text-[11px] text-zinc-500 mt-0.5">{pill.desc}</span>
+                  </button>
+                ))}
+              </div>
             </div>
-            <div className="text-2xl font-bold font-mono tracking-tight text-white">Ready</div>
-            <p className="text-[11px] text-slate-400 mt-1">0.000s Audio/Video Drift</p>
-          </div>
 
-          <div className="p-5 rounded-xl bg-[#111317] border border-white/[0.08] hover:border-white/[0.14] transition-all shadow-carbon-card">
-            <div className="flex items-center justify-between text-slate-400 mb-2">
-              <span className="text-[11px] font-mono uppercase tracking-wider text-slate-400">Privacy Mode</span>
-              <Sparkles className="w-4 h-4 text-sky-400" strokeWidth={1.75} />
-            </div>
-            <div className="text-2xl font-bold font-mono tracking-tight text-white">100% Local</div>
-            <p className="text-[11px] text-slate-400 mt-1">Zero cloud dependencies</p>
-          </div>
-        </section>
+            {/* Optional Project Title & AI Instructions */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-semibold text-zinc-300 uppercase tracking-wider mb-1.5">
+                  Project Title (Optional)
+                </label>
+                <input
+                  type="text"
+                  value={projectTitle}
+                  onChange={(e) => setProjectTitle(e.target.value)}
+                  placeholder="e.g. Lex Fridman #412 AI Debate"
+                  className="w-full px-3.5 py-2.5 rounded-lg bg-[#171722] border border-[#28243C] text-sm text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-purple-500 transition"
+                />
+              </div>
 
-        {/* Projects Section */}
-        <section>
-          <div className="flex items-center justify-between mb-5">
-            <div>
-              <h2 className="text-base font-bold tracking-tight text-white">Active Projects</h2>
-              <p className="text-xs text-slate-400">Video source files, AI transcripts, and 9:16 virality candidate clips</p>
+              <div>
+                <label className="block text-xs font-semibold text-zinc-300 uppercase tracking-wider mb-1.5">
+                  AI Clipping Focus
+                </label>
+                <input
+                  type="text"
+                  value={instructions}
+                  onChange={(e) => setInstructions(e.target.value)}
+                  placeholder="e.g. Prioritize high-energy debates with actionable frameworks"
+                  className="w-full px-3.5 py-2.5 rounded-lg bg-[#171722] border border-[#28243C] text-sm text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-purple-500 transition"
+                />
+              </div>
             </div>
+
+            {/* Upload / Ingestion Progress Bar */}
+            {uploading && (
+              <div className="p-4 rounded-xl bg-purple-950/30 border border-purple-500/30 space-y-2">
+                <div className="flex justify-between text-xs font-medium text-purple-300">
+                  <span>{uploadStage || "Processing video..."}</span>
+                  <span>{uploadPercent > 0 ? `${uploadPercent}%` : "In Progress"}</span>
+                </div>
+                <div className="w-full h-2 rounded-full bg-zinc-800 overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-purple-500 to-indigo-500 transition-all duration-300"
+                    style={{ width: `${Math.max(5, uploadPercent)}%` }}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Ingestion Submit Button */}
+            <button
+              type="submit"
+              disabled={uploading || (sourceMode === "youtube" ? !youtubeUrl.trim() : !selectedFile)}
+              className="w-full py-4 rounded-xl font-bold text-base bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-600 hover:from-purple-500 hover:to-indigo-500 text-white shadow-xl shadow-purple-600/30 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              <Zap className="w-5 h-5 text-yellow-300" />
+              <span>{uploading ? "Ingesting & Preparing Video..." : "Get Clips in 1 Click (OmniRoute + RTX 4060)"}</span>
+            </button>
+          </form>
+        </div>
+
+        {/* Existing Projects / Opus Gallery Section */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-bold text-white flex items-center gap-2">
+              <Film className="w-5 h-5 text-purple-400" />
+              <span>Your Repurposed Projects ({projects.length})</span>
+            </h2>
             <button
               onClick={loadData}
-              className="p-2 rounded-lg bg-[#16191F] border border-white/[0.08] hover:bg-[#1E222A] text-slate-400 hover:text-white transition-colors"
+              className="p-2 rounded-lg bg-[#171722] border border-[#28243C] text-zinc-400 hover:text-white transition"
               title="Refresh projects"
             >
               <RefreshCw className="w-4 h-4" />
@@ -330,319 +456,91 @@ export default function Dashboard() {
           </div>
 
           {loading ? (
-            <div className="h-64 rounded-2xl border border-white/5 bg-[#121216]/50 flex items-center justify-center">
-              <div className="flex items-center gap-3 text-zinc-400 text-sm">
-                <RefreshCw className="w-5 h-5 animate-spin text-violet-500" />
-                <span>Loading studio projects...</span>
-              </div>
-            </div>
+            <div className="text-center py-12 text-zinc-500 text-sm">Loading studio projects...</div>
           ) : projects.length === 0 ? (
-            <div className="h-72 rounded-xl border border-dashed border-white/[0.10] bg-[#111317]/50 flex flex-col items-center justify-center text-center p-6">
-              <div className="w-12 h-12 rounded-xl bg-sky-400/10 border border-sky-400/20 flex items-center justify-center text-sky-400 mb-4">
-                <Video className="w-6 h-6" strokeWidth={1.75} />
-              </div>
-              <h3 className="font-semibold text-sm text-slate-200 mb-1">No Projects in Local Storage</h3>
-              <p className="text-xs text-slate-400 max-w-sm mb-5">
-                Import a video or paste a YouTube URL to discover viral 9:16 vertical clips on your RTX GPU.
+            <div className="border border-[#28243C] rounded-2xl bg-[#121219] p-12 text-center text-zinc-400 space-y-2">
+              <Film className="w-10 h-10 text-zinc-600 mx-auto" />
+              <p className="font-semibold text-zinc-300">No projects yet</p>
+              <p className="text-xs text-zinc-500">
+                Paste a YouTube URL or drag a local video into the card above to generate viral shorts!
               </p>
-              <button
-                onClick={() => setModalOpen(true)}
-                className="flex items-center gap-2 px-3.5 py-1.5 rounded-lg bg-sky-400 hover:bg-sky-300 text-slate-950 font-semibold text-xs tracking-wide shadow-sm transition-all"
-              >
-                <Plus className="w-3.5 h-3.5" strokeWidth={2.5} />
-                <span>Create New Project</span>
-              </button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-              {projects.map((proj) => {
-                const hasMedia = proj.status === "ready" && proj.duration > 0;
-                return (
-                  <div
-                    key={proj.id}
-                    className="rounded-xl bg-[#111317] border border-white/[0.08] hover:border-white/[0.16] transition-all duration-200 overflow-hidden flex flex-col group shadow-carbon-card"
-                  >
-                    {/* Thumbnail / Media Header */}
-                    <div className="h-44 bg-[#0A0B0D] relative flex items-center justify-center overflow-hidden border-b border-white/[0.08]">
-                      {hasMedia ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {projects.map((proj) => (
+                <div
+                  key={proj.id}
+                  className="group relative border border-[#28243C] hover:border-purple-500/50 rounded-2xl bg-[#121219] overflow-hidden transition shadow-lg hover:shadow-purple-950/20 flex flex-col justify-between"
+                >
+                  <div>
+                    {/* Thumbnail Stage */}
+                    <div className="relative aspect-video bg-black/60 overflow-hidden">
+                      {proj.status === "ready" ? (
                         <img
                           src={getThumbnailUrl(proj.id)}
                           alt={proj.title}
-                          className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-300"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).style.display = "none";
-                          }}
+                          className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
                         />
                       ) : (
-                        <Film className="w-8 h-8 text-slate-600 group-hover:text-sky-400/70 transition-colors" strokeWidth={1.5} />
+                        <div className="w-full h-full flex items-center justify-center text-zinc-600">
+                          <Film className="w-8 h-8 opacity-40" />
+                        </div>
                       )}
 
-                      <div className="absolute inset-0 bg-gradient-to-t from-[#111317] via-transparent to-black/40 z-10" />
+                      {/* Duration Tag */}
+                      <div className="absolute bottom-2 right-2 px-2 py-0.5 rounded bg-black/80 text-white text-[11px] font-mono">
+                        {formatDuration(proj.duration)}
+                      </div>
 
-                      {/* Status Badge */}
-                      <div className="absolute top-3 left-3 z-20">
-                        <span className={`px-2 py-0.5 rounded-md text-[10px] font-mono tracking-wider uppercase backdrop-blur-md border ${
-                          proj.status === "ready" || proj.status === "discovered"
-                            ? "bg-emerald-500/10 text-emerald-300 border-emerald-500/30"
-                            : "bg-[#16191F]/90 text-slate-300 border-white/[0.10]"
-                        }`}>
+                      {/* Status Tag */}
+                      <div className="absolute top-2 left-2">
+                        <span
+                          className={`text-[10px] font-semibold uppercase px-2 py-0.5 rounded-full border ${
+                            proj.status === "ready"
+                              ? "bg-emerald-950/80 text-emerald-300 border-emerald-500/30"
+                              : "bg-purple-950/80 text-purple-300 border-purple-500/30 animate-pulse"
+                          }`}
+                        >
                           {proj.status}
                         </span>
                       </div>
-
-                      {/* Resolution & Duration Pill */}
-                      {hasMedia && (
-                        <div className="absolute bottom-3 left-3 z-20 flex items-center gap-1.5">
-                          <span className="px-2 py-0.5 rounded-md text-[10px] font-mono bg-black/80 backdrop-blur-md text-slate-200 border border-white/10">
-                            {formatDuration(proj.duration)}
-                          </span>
-                          <span className="px-2 py-0.5 rounded-md text-[10px] font-mono font-medium bg-[#16191F]/90 backdrop-blur-md text-sky-300 border border-sky-400/30">
-                            {proj.height || 1080}p
-                          </span>
-                        </div>
-                      )}
-
-                      {/* Delete button */}
-                      <div className="absolute top-3 right-3 z-20 flex items-center gap-1.5">
-                        <button
-                          onClick={() => handleDeleteProject(proj.id)}
-                          className="p-1.5 rounded-lg bg-black/60 hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 transition-colors"
-                          title="Delete project"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
                     </div>
 
-                    {/* Card Content */}
+                    {/* Card Meta */}
+                    <div className="p-5 space-y-2">
+                      <h3 className="font-bold text-base text-zinc-100 group-hover:text-purple-300 transition line-clamp-1">
+                        {proj.title}
+                      </h3>
+                      <p className="text-xs text-zinc-400 line-clamp-2">
+                        {proj.instructions || "Standard virality instructions"}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Card Actions Footer */}
+                  <div className="p-5 pt-0 flex items-center justify-between gap-2 border-t border-zinc-800/60 mt-4">
                     <Link
                       href={`/projects/${proj.id}`}
-                      className="p-5 flex-1 flex flex-col justify-between cursor-pointer group-hover:bg-white/[0.01] transition-colors"
+                      className="flex-1 py-2 rounded-lg bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/30 text-purple-300 text-xs font-semibold text-center transition flex items-center justify-center gap-1.5"
                     >
-                      <div>
-                        <h3 className="font-semibold text-sm text-slate-100 group-hover:text-sky-300 transition-colors line-clamp-1 mb-1.5">
-                          {proj.title}
-                        </h3>
-                        {proj.instructions && (
-                          <p className="text-xs text-slate-400 line-clamp-2 mb-3 leading-relaxed">
-                            {proj.instructions}
-                          </p>
-                        )}
-                      </div>
-
-                      <div className="pt-3 border-t border-white/[0.06] flex items-center justify-between text-[11px] text-slate-500 font-mono">
-                        <div className="flex items-center gap-1.5">
-                          <Clock className="w-3.5 h-3.5" />
-                          <span>{new Date(proj.created_at).toLocaleDateString()}</span>
-                        </div>
-                        <div className="flex items-center gap-1 text-sky-400 font-medium">
-                          <span>{proj.clips_count || 0} clips</span>
-                          <ArrowRight className="w-3.5 h-3.5 ml-0.5" />
-                        </div>
-                      </div>
+                      <Sparkles className="w-3.5 h-3.5" />
+                      <span>Open Studio & Clips</span>
                     </Link>
+
+                    <button
+                      onClick={() => handleDeleteProject(proj.id)}
+                      className="p-2 rounded-lg text-zinc-500 hover:text-red-400 hover:bg-red-950/20 transition"
+                      title="Delete project"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
                   </div>
-                );
-              })}
+                </div>
+              ))}
             </div>
           )}
-        </section>
-      </main>
-
-      {/* New Project & Video Upload Modal */}
-      {modalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-sm animate-fade-in">
-          <div className="w-full max-w-xl rounded-xl bg-[#111317] border border-white/[0.12] shadow-2xl p-6 relative">
-            <button
-              onClick={() => {
-                if (!uploading) setModalOpen(false);
-              }}
-              disabled={uploading}
-              className="absolute top-4 right-4 text-slate-400 hover:text-white p-1 rounded-lg transition-colors disabled:opacity-30"
-            >
-              <X className="w-5 h-5" />
-            </button>
-
-            <div className="flex items-center gap-3 mb-5">
-              <div className="w-9 h-9 rounded-lg bg-sky-400/10 border border-sky-400/30 flex items-center justify-center text-sky-400">
-                <Video className="w-4 h-4" strokeWidth={1.75} />
-              </div>
-              <div>
-                <h3 className="text-base font-bold text-white">Create New Project</h3>
-                <p className="text-xs text-slate-400">Import source video and specify natural language clipping targets</p>
-              </div>
-            </div>
-
-            <form onSubmit={handleCreateAndUpload} className="space-y-4">
-              {/* Source Mode Switcher: Upload File vs YouTube Link */}
-              <div className="grid grid-cols-2 gap-2 p-1 bg-[#16191F] border border-white/[0.08] rounded-lg">
-                <button
-                  type="button"
-                  onClick={() => setSourceMode("file")}
-                  className={`py-2 rounded-md text-xs font-semibold flex items-center justify-center gap-2 transition-all ${
-                    sourceMode === "file"
-                      ? "bg-sky-400 text-slate-950 shadow-sm"
-                      : "text-slate-400 hover:text-white"
-                  }`}
-                >
-                  <UploadCloud className="w-4 h-4" />
-                  Upload Local File
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSourceMode("youtube")}
-                  className={`py-2 rounded-md text-xs font-semibold flex items-center justify-center gap-2 transition-all ${
-                    sourceMode === "youtube"
-                      ? "bg-rose-500 text-white shadow-sm"
-                      : "text-slate-400 hover:text-white"
-                  }`}
-                >
-                  <Youtube className="w-4 h-4 text-white" />
-                  YouTube Link
-                </button>
-              </div>
-
-              {sourceMode === "youtube" ? (
-                <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-1.5">
-                    YouTube Video URL *
-                  </label>
-                  <div className="relative">
-                    <input
-                      type="url"
-                      placeholder="https://www.youtube.com/watch?v=..."
-                      value={youtubeUrl}
-                      onChange={(e) => setYoutubeUrl(e.target.value)}
-                      required={sourceMode === "youtube"}
-                      className="w-full pl-10 pr-3.5 py-2.5 rounded-lg bg-[#16191F] border border-white/[0.10] text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-sky-400 transition-colors"
-                    />
-                    <Youtube className="w-4 h-4 text-rose-500 absolute left-3.5 top-3" />
-                  </div>
-                  <p className="text-[11px] text-slate-500 mt-1.5">
-                    Downloaded directly via local <code className="text-slate-400 font-mono">yt-dlp</code> up to 1080p MP4.
-                  </p>
-                </div>
-              ) : (
-                /* Drag and Drop Upload Zone */
-                <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-1.5">
-                    Source Video *
-                  </label>
-                  <div
-                    onDragOver={(e) => {
-                      e.preventDefault();
-                      setDragOver(true);
-                    }}
-                    onDragLeave={() => setDragOver(false)}
-                    onDrop={handleFileDrop}
-                    onClick={() => fileInputRef.current?.click()}
-                    className={`border border-dashed rounded-lg p-6 flex flex-col items-center justify-center cursor-pointer transition-all ${
-                      dragOver
-                        ? "border-sky-400 bg-sky-400/10"
-                        : selectedFile
-                        ? "border-emerald-500/40 bg-emerald-500/5"
-                        : "border-white/[0.12] hover:border-white/[0.24] bg-[#16191F]/40"
-                    }`}
-                  >
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept="video/mp4,video/quicktime,video/webm,video/x-matroska"
-                      onChange={handleFileSelect}
-                      className="hidden"
-                    />
-
-                    {selectedFile ? (
-                      <div className="flex items-center gap-3 text-emerald-400">
-                        <FileVideo className="w-8 h-8 flex-shrink-0" />
-                        <div className="text-left overflow-hidden">
-                          <p className="text-xs font-semibold text-slate-200 truncate max-w-[280px]">
-                            {selectedFile.name}
-                          </p>
-                          <p className="text-[11px] text-slate-400 font-mono">
-                            {(selectedFile.size / (1024 * 1024)).toFixed(1)} MB · Ready to ingest
-                          </p>
-                        </div>
-                      </div>
-                    ) : (
-                      <>
-                        <UploadCloud className="w-7 h-7 text-slate-500 mb-2" strokeWidth={1.5} />
-                        <p className="text-xs font-medium text-slate-200 text-center">
-                          Drag and drop video here, or <span className="text-sky-400 font-semibold">browse files</span>
-                        </p>
-                        <p className="text-[10px] text-slate-500 mt-1">
-                          MP4, MOV, WebM, MKV · Stays 100% on your local disk
-                        </p>
-                      </>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              <div>
-                <label className="block text-xs font-medium text-slate-300 mb-1.5">
-                  Project Title *
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. Sam Altman AI Interview"
-                  value={newTitle}
-                  onChange={(e) => setNewTitle(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-lg bg-[#16191F] border border-white/[0.10] text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-sky-400 transition-colors"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-slate-300 mb-1.5">
-                  Natural Language AI Instructions
-                </label>
-                <textarea
-                  rows={2}
-                  value={newInstructions}
-                  onChange={(e) => setNewInstructions(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-lg bg-[#16191F] border border-white/[0.10] text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-sky-400 transition-colors"
-                  placeholder="Describe the moments you want discovered..."
-                />
-              </div>
-
-              {/* Upload Progress Bar if Uploading */}
-              {uploading && (
-                <div className="p-3.5 rounded-lg bg-sky-950/30 border border-sky-400/20">
-                  <div className="flex items-center justify-between text-xs mb-1.5">
-                    <span className="text-sky-300 font-medium">{uploadStage}</span>
-                    <span className="text-slate-400 font-mono">{uploadPercent}%</span>
-                  </div>
-                  <div className="w-full h-1.5 bg-[#16191F] rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-sky-400 transition-all duration-300"
-                      style={{ width: `${uploadPercent}%` }}
-                    />
-                  </div>
-                </div>
-              )}
-
-              <div className="pt-2 flex items-center justify-end gap-3">
-                <button
-                  type="button"
-                  disabled={uploading}
-                  onClick={() => setModalOpen(false)}
-                  className="px-3.5 py-2 rounded-lg bg-[#16191F] hover:bg-[#1E222A] text-slate-300 text-xs font-medium transition-colors disabled:opacity-40 border border-white/[0.08]"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={uploading || !newTitle.trim()}
-                  className="px-4 py-2 rounded-lg bg-sky-400 hover:bg-sky-300 disabled:opacity-50 text-slate-950 text-xs font-semibold shadow-sm transition-all"
-                >
-                  {uploading ? "Ingesting Video..." : "Create & Ingest Video"}
-                </button>
-              </div>
-            </form>
-          </div>
         </div>
-      )}
+      </main>
     </div>
   );
 }

@@ -248,9 +248,62 @@ export async function runAnalysis(projectId: string): Promise<any> {
   return res.json();
 }
 
+export interface OmniRouteConfig {
+  apiKey: string;
+  baseUrl: string;
+  model: string;
+}
+
+export function getOmniRouteConfig(): OmniRouteConfig {
+  if (typeof window === "undefined") {
+    return { apiKey: "", baseUrl: "http://localhost:20128/v1", model: "google/gemini-2.0-flash-001" };
+  }
+  const key = localStorage.getItem("clipforge_omniroute_key") || "";
+  const baseUrl = localStorage.getItem("clipforge_omniroute_url") || "http://localhost:20128/v1";
+  const model = localStorage.getItem("clipforge_omniroute_model") || "google/gemini-2.0-flash-001";
+  return { apiKey: key, baseUrl, model };
+}
+
+export function setOmniRouteConfig(config: Partial<OmniRouteConfig>): void {
+  if (typeof window === "undefined") return;
+  if (config.apiKey !== undefined) localStorage.setItem("clipforge_omniroute_key", config.apiKey.trim());
+  if (config.baseUrl !== undefined) localStorage.setItem("clipforge_omniroute_url", config.baseUrl.trim());
+  if (config.model !== undefined) localStorage.setItem("clipforge_omniroute_model", config.model.trim());
+}
+
+export async function testOmniRouteConnection(config: OmniRouteConfig): Promise<{ success: boolean; error?: string; model?: string }> {
+  const res = await fetch(`${API_BASE}/omniroute/test`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      api_key: config.apiKey,
+      base_url: config.baseUrl,
+      model: config.model,
+    }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    return { success: false, error: err.detail || `HTTP ${res.status}` };
+  }
+  return res.json();
+}
+
 export async function discoverClips(projectId: string): Promise<Clip[]> {
+  const omni = getOmniRouteConfig();
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (omni.apiKey) {
+    headers["X-OmniRoute-Key"] = omni.apiKey;
+    headers["X-OmniRoute-Url"] = omni.baseUrl;
+    headers["X-OmniRoute-Model"] = omni.model;
+  }
   const res = await fetch(`${API_BASE}/projects/${projectId}/discover`, {
     method: "POST",
+    headers,
+    body: JSON.stringify({
+      omniroute_api_key: omni.apiKey || undefined,
+      omniroute_base_url: omni.baseUrl || undefined,
+      omniroute_model: omni.model || undefined,
+    }),
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));

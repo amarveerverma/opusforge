@@ -37,6 +37,15 @@ module.exports = {
           600: "#0284C7",
           700: "#0369A1",
         },
+        opus: {
+          bg: "#0B0B10",
+          card: "#121219",
+          surface: "#181824",
+          border: "#28243C",
+          primary: "#7C3AED",
+          violet: "#8B5CF6",
+          emerald: "#10B981",
+        },
         border: "rgba(255, 255, 255, 0.08)",
       },
       fontFamily: {

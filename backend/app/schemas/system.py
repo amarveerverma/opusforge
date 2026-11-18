@@ -33,3 +33,8 @@ class HealthResponse(BaseModel):
     status: str
     app: str
     version: str
+
+class OmniRouteTestRequest(BaseModel):
+    api_key: str
+    base_url: Optional[str] = None
+    model: Optional[str] = None
