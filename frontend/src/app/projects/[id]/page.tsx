@@ -82,7 +82,7 @@ export default function ProjectPage() {
       await runAnalysis(projectId);
 
       // 3. AI Clip Discovery
-      setProcessingStage("Executing OmniRoute AI decision engine for viral hooks & rankings...");
+      setProcessingStage("Executing AI decision engine for viral hooks & rankings...");
       const discovered = await discoverClips(projectId);
       setClips(discovered);
 
@@ -278,7 +278,7 @@ export default function ProjectPage() {
               <div className="space-y-1">
                 <p className="text-sm font-medium text-zinc-200">No clips generated yet</p>
                 <p className="text-xs text-zinc-400 max-w-md mx-auto">
-                  Click "Run OmniRoute Discovery" above to run audio transcription, speaker diarization, face tracking, and viral ranking.
+                  Click "Run AI Discovery" above to run audio transcription, speaker diarization, face tracking, and viral ranking.
                 </p>
               </div>
               <button
@@ -287,7 +287,7 @@ export default function ProjectPage() {
                 className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-bold shadow-lg shadow-purple-600/30 inline-flex items-center gap-2 transition"
               >
                 <Zap className="w-4 h-4" />
-                Start OmniRoute Analysis
+                Start AI Discovery
               </button>
             </div>
           ) : (

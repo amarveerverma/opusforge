@@ -241,15 +241,23 @@ async def import_youtube_video(project_id: str, payload: YouTubeImportRequest):
     
     outtmpl = str(src_dir / "%(id)s_%(title).50s.%(ext)s")
     ydl_opts = {
-        "format": "bestvideo[ext=mp4][height<=1080]+bestaudio[ext=m4a]/best[ext=mp4]/best",
+        "format": "bestvideo[height<=1080]+bestaudio/best[height<=1080]/best",
         "outtmpl": outtmpl,
         "merge_output_format": "mp4",
-        "quiet": True,
-        "no_warnings": True,
+        "quiet": False,
+        "no_warnings": False,
         "noplaylist": True,
     }
     
     try:
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            pre_info = ydl.extract_info(url, download=False)
+            if pre_info and pre_info.get("is_live"):
+                # If video is an active live stream, capture 420 seconds (7 mins) using ffmpeg downloader
+                logger.info("Active live stream detected. Downloading 420 seconds via ffmpeg downloader...")
+                ydl_opts["downloader"] = "ffmpeg"
+                ydl_opts["downloader_args"] = {"ffmpeg_i": ["-t", "420"]}
+                
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info_dict = ydl.extract_info(url, download=True)
             downloaded_file = Path(ydl.prepare_filename(info_dict))
@@ -257,6 +265,11 @@ async def import_youtube_video(project_id: str, payload: YouTubeImportRequest):
                 mp4_file = downloaded_file.with_suffix(".mp4")
                 if mp4_file.exists():
                     downloaded_file = mp4_file
+            if not downloaded_file.exists():
+                # Find downloaded file in src_dir
+                files = list(src_dir.glob("*.mp4")) + list(src_dir.glob("*.mkv")) + list(src_dir.glob("*.webm"))
+                if files:
+                    downloaded_file = max(files, key=lambda f: f.stat().st_mtime)
     except Exception as e:
         logger.error("YouTube download error: %s", e)
         raise HTTPException(status_code=400, detail=f"Failed to download YouTube video: {e}")
