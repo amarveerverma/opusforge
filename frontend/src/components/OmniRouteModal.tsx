@@ -113,7 +113,7 @@ export function OmniRouteModal({ isOpen, onClose, onConfigSaved }: OmniRouteModa
 
           <div>
             <label className="block text-xs font-semibold text-zinc-300 uppercase tracking-wider mb-1.5">
-              OmniRoute Gateway Endpoint
+              AI Gateway Endpoint
             </label>
             <input
               type="text"
@@ -122,9 +122,29 @@ export function OmniRouteModal({ isOpen, onClose, onConfigSaved }: OmniRouteModa
               placeholder="http://localhost:20128/v1"
               className="w-full px-3.5 py-2.5 rounded-lg bg-zinc-900/90 border border-zinc-800 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-purple-500 transition font-mono"
             />
-            <p className="text-[11px] text-zinc-500 mt-1">
-              Default local port for cheaper-inference/OmniRoute is <code className="text-purple-400 font-mono">http://localhost:20128/v1</code>.
-            </p>
+            <div className="flex gap-2 mt-2">
+              <button
+                type="button"
+                onClick={() => setBaseUrl("http://localhost:20128/v1")}
+                className="text-[11px] px-2 py-1 rounded bg-zinc-800/80 hover:bg-zinc-700 text-zinc-300 border border-zinc-700/50 transition font-mono"
+              >
+                OmniRoute (:20128)
+              </button>
+              <button
+                type="button"
+                onClick={() => setBaseUrl("http://localhost:3001/v1")}
+                className="text-[11px] px-2 py-1 rounded bg-zinc-800/80 hover:bg-zinc-700 text-zinc-300 border border-zinc-700/50 transition font-mono"
+              >
+                FreeLLMAPI (:3001)
+              </button>
+              <button
+                type="button"
+                onClick={() => setBaseUrl("https://openrouter.ai/api/v1")}
+                className="text-[11px] px-2 py-1 rounded bg-zinc-800/80 hover:bg-zinc-700 text-zinc-300 border border-zinc-700/50 transition font-mono"
+              >
+                OpenRouter (Cloud)
+              </button>
+            </div>
           </div>
 
           <div>
